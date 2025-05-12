@@ -2,6 +2,7 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
+#[derive(Clone)]
 pub struct Cli {
     #[arg(short = 'b', long)]
     pub bam: String,

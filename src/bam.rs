@@ -70,6 +70,8 @@ impl BamProcessor {
         let mut bam = bam::Reader::from_path(&self.bam_path)
             .context(format!("Failed to open BAM file: {}", self.bam_path))?;
         
+        let target_names = bam.header().target_names().to_owned();
+        
         for record in bam.records() {
             let rec = record?;
             
@@ -78,7 +80,6 @@ impl BamProcessor {
             }
             
             let tid = rec.tid();
-            let target_names = bam.header().target_names();
             let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
                 std::str::from_utf8(target_names[tid as usize])?.to_string()
             } else {
@@ -134,6 +135,8 @@ impl BamProcessor {
         let mut control_bam = bam::Reader::from_path(control_path)
             .context(format!("Failed to open control BAM file: {}", control_path))?;
         
+        let target_names = control_bam.header().target_names().to_owned();
+        
         for record in control_bam.records() {
             let rec = record?;
             
@@ -142,7 +145,6 @@ impl BamProcessor {
             }
             
             let tid = rec.tid();
-            let target_names = control_bam.header().target_names();
             let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
                 std::str::from_utf8(target_names[tid as usize])?.to_string()
             } else {

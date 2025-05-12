@@ -59,7 +59,7 @@ impl BayesianModel {
         
         let significant = self.apply_fdr_correction(p_values, self.significance_threshold)?;
         
-        for (mut bin, _) in significant {
+        for (bin, _) in significant {
             significant_bins.push(bin);
         }
         
@@ -78,7 +78,7 @@ impl BayesianModel {
             .filter_map(|(_, count)| if *count > 0 { Some(*count as f64) } else { None })
             .collect();
         
-        let mean = non_zero_counts.mean();
+        let mean = non_zero_counts.clone().mean();
         let variance = non_zero_counts.variance();
         
         let total_mean = mean / total_reads as f64;
