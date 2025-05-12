@@ -3,7 +3,7 @@ use crate::bayesian::BayesianModel;
 use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::{Context, Result};
-use log::{debug, info};
+use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
 

@@ -1,8 +1,7 @@
 use anyhow::{Context, Result};
-use log::{debug, info};
-use rust_htslib::bam::{self, Read, Record};
+use log::info;
+use rust_htslib::bam::{self, Read};
 use std::collections::HashMap;
-use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct GenomicRange {
