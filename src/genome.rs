@@ -52,7 +52,6 @@ impl Genome {
         
         let header = bam.header();
         let target_names = header.target_names();
-        let target_lengths = header.target_lengths();
         
         let mut seqnames = Vec::new();
         let mut lengths = Vec::new();
@@ -62,7 +61,9 @@ impl Genome {
                 .context("Failed to parse chromosome name")?
                 .to_string();
             
-            let length = target_lengths[i];
+            let length = header.target_len(i as u32)
+                .context(format!("Failed to get length for chromosome {}", chrom))?
+                as u32;
             
             seqnames.push(chrom);
             lengths.push(length);
