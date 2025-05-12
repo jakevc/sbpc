@@ -27,13 +27,24 @@ def create_header():
 def generate_peak_regions(num_peaks, header):
     """Generate random peak regions."""
     peaks = []
-    for _ in range(num_peaks):
-        chrom_idx = np.random.randint(0, len(header['SQ']))
+    
+    chrom_assignments = np.random.choice(len(header['SQ']), num_peaks)
+    
+    for i in range(num_peaks):
+        chrom_idx = chrom_assignments[i]
         chrom = header['SQ'][chrom_idx]['SN']
         chrom_len = header['SQ'][chrom_idx]['LN']
         
-        width = np.random.randint(150, 300)
-        start = np.random.randint(0, chrom_len - width)
+        width = 200  # Fixed width for more consistent peaks
+        
+        section_size = chrom_len // (num_peaks + 1)
+        section_start = section_size * (i % (num_peaks + 1))
+        
+        max_start = min(section_start + section_size - width, chrom_len - width)
+        if max_start <= 0:
+            max_start = 1
+            
+        start = np.random.randint(1, max_start)
         end = start + width
         
         peaks.append((chrom, start, end))
@@ -44,15 +55,22 @@ def generate_reads(num_reads, peaks, header, is_control=False):
     """Generate random reads, with enrichment in peak regions for sample."""
     reads = []
     
-    peak_prob = 0.9 if not is_control else 0.1
+    peak_prob = 0.95 if not is_control else 0.05
     
     if not is_control:
         for peak_idx, (chrom, peak_start, peak_end) in enumerate(peaks):
-            for i in range(50):
-                read_id = num_reads + peak_idx * 50 + i
+            for i in range(200):
+                read_id = num_reads + peak_idx * 200 + i
                 
-                pos = np.random.randint(peak_start, peak_end - 50)
-                tlen = np.random.randint(50, 100)  # Shorter fragments for more precise peaks
+                peak_center = (peak_start + peak_end) // 2
+                peak_width = peak_end - peak_start
+                
+                pos = int(np.random.normal(peak_center, peak_width/6))
+                
+                pos = max(peak_start, min(pos, peak_end - 100))
+                
+                # Shorter fragments for more precise peaks
+                tlen = np.random.randint(50, 100)
                 
                 read1 = pysam.AlignedSegment()
                 read1.query_name = f"peak_read_{read_id}_1"
@@ -61,14 +79,27 @@ def generate_reads(num_reads, peaks, header, is_control=False):
                 read1.mapping_quality = 60
                 read1.cigartuples = [(0, 75)]  # 75M (75bp match)
                 read1.flag = 99  # Paired, mapped, first in pair
+                
+                mate_pos = pos + tlen - 75
+                chrom_len = header['SQ'][read1.reference_id]['LN']
+                
+                if mate_pos >= chrom_len:
+                    mate_pos = chrom_len - 76
+                
+                if mate_pos > pos:
+                    tlen = mate_pos - pos + 75
+                else:
+                    mate_pos = pos + 1
+                    tlen = 76
+                
                 read1.template_length = tlen
                 read1.next_reference_id = read1.reference_id
-                read1.next_reference_start = pos + tlen - 75
+                read1.next_reference_start = mate_pos
                 
                 read2 = pysam.AlignedSegment()
                 read2.query_name = f"peak_read_{read_id}_1"
                 read2.reference_id = read1.reference_id
-                read2.reference_start = read1.next_reference_start
+                read2.reference_start = mate_pos
                 read2.mapping_quality = 60
                 read2.cigartuples = [(0, 75)]  # 75M (75bp match)
                 read2.flag = 147  # Paired, mapped, second in pair, reverse strand
@@ -86,13 +117,19 @@ def generate_reads(num_reads, peaks, header, is_control=False):
             peak_idx = np.random.randint(0, len(peaks))
             chrom, peak_start, peak_end = peaks[peak_idx]
             
-            pos = np.random.randint(peak_start, peak_end)
-            tlen = np.random.randint(50, 150)  # Fragment length
+            peak_center = (peak_start + peak_end) // 2
+            peak_width = peak_end - peak_start
+            pos = int(np.random.normal(peak_center, peak_width/6))
+            
+            pos = max(peak_start, min(pos, peak_end - 100))
+            
+            tlen = np.random.randint(50, 100)  # Shorter fragments for peaks
         else:
             chrom_idx = np.random.randint(0, len(header['SQ']))
             chrom = header['SQ'][chrom_idx]['SN']
             chrom_len = header['SQ'][chrom_idx]['LN']
-            pos = np.random.randint(0, chrom_len)
+            
+            pos = np.random.randint(1, max(2, chrom_len - 200))
             tlen = np.random.randint(50, 150)  # Fragment length
         
         read1 = pysam.AlignedSegment()
@@ -102,14 +139,27 @@ def generate_reads(num_reads, peaks, header, is_control=False):
         read1.mapping_quality = 60
         read1.cigartuples = [(0, 75)]  # 75M (75bp match)
         read1.flag = 99  # Paired, mapped, first in pair
+        
+        mate_pos = pos + tlen - 75
+        chrom_len = header['SQ'][read1.reference_id]['LN']
+        
+        if mate_pos >= chrom_len:
+            mate_pos = chrom_len - 76
+        
+        if mate_pos > pos:
+            tlen = mate_pos - pos + 75
+        else:
+            mate_pos = pos + 1
+            tlen = 76
+        
         read1.template_length = tlen
         read1.next_reference_id = read1.reference_id
-        read1.next_reference_start = pos + tlen - 75
+        read1.next_reference_start = mate_pos
         
         read2 = pysam.AlignedSegment()
         read2.query_name = f"read_{i}_1"
         read2.reference_id = read1.reference_id
-        read2.reference_start = read1.next_reference_start
+        read2.reference_start = mate_pos
         read2.mapping_quality = 60
         read2.cigartuples = [(0, 75)]  # 75M (75bp match)
         read2.flag = 147  # Paired, mapped, second in pair, reverse strand

@@ -39,7 +39,7 @@ jobs:
 
       - name: Run SBPC on test data
         run: |
-          ./target/release/sbpc -b tests/data/test_sample.bam -c tests/data/test_control.bam -o tests/data/test_output --verbose -r 5 -p 0.1
+          ./target/release/sbpc -b tests/data/test_sample.bam -c tests/data/test_control.bam -o tests/data/test_output --verbose -r 1 -p 0.5 -m 500 -w 100
           
       - name: Display output metrics
         run: |
