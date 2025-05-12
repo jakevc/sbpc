@@ -78,13 +78,13 @@ impl Genome {
     }
     
     pub fn filter_known_chromosomes(seqnames: Vec<String>, lengths: Vec<u32>) -> Self {
-        let filter_pattern = "Un|_|EBV|N|M";
+        let filter_patterns = ["Un", "_", "EBV", "N", "M"];
         
         let mut filtered_seqnames = Vec::new();
         let mut filtered_lengths = Vec::new();
         
         for (i, chrom) in seqnames.iter().enumerate() {
-            if !chrom.contains(filter_pattern) {
+            if !filter_patterns.iter().any(|&pattern| chrom.contains(pattern)) {
                 filtered_seqnames.push(chrom.clone());
                 filtered_lengths.push(lengths[i]);
             }
