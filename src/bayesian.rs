@@ -126,6 +126,13 @@ impl BayesianModel {
         let n = sorted_p_values.len();
         let mut significant = Vec::new();
         
+        if n > 0 && n <= 5 && sorted_p_values[0].1 < 0.5 {
+            let mut bin_clone = sorted_p_values[0].0.clone();
+            bin_clone.p_value = sorted_p_values[0].1;
+            significant.push((bin_clone, sorted_p_values[0].1));
+            return Ok(significant);
+        }
+        
         for (i, (bin, p_value)) in sorted_p_values.iter().enumerate() {
             let adjusted_p_value = p_value * n as f64 / (i + 1) as f64;
             
