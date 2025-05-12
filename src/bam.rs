@@ -81,7 +81,7 @@ impl BamProcessor {
             
             let tid = rec.tid();
             let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
-                std::str::from_utf8(target_names[tid as usize])?.to_string()
+                std::str::from_utf8(&target_names[tid as usize])?.to_string()
             } else {
                 continue;
             };
@@ -146,7 +146,7 @@ impl BamProcessor {
             
             let tid = rec.tid();
             let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
-                std::str::from_utf8(target_names[tid as usize])?.to_string()
+                std::str::from_utf8(&target_names[tid as usize])?.to_string()
             } else {
                 continue;
             };
