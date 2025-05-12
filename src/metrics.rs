@@ -8,13 +8,13 @@ use std::time::Duration;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Metrics {
     #[serde(rename = "sbpc_version")]
-    version: String,
-    date: String,
-    elapsed: String,
-    prefix: String,
-    command: String,
+    pub version: String,
+    pub date: String,
+    pub elapsed: String,
+    pub prefix: String,
+    pub command: String,
     #[serde(rename = "peak_counts")]
-    peaks: usize,
+    pub peaks: usize,
 }
 
 impl Metrics {
