@@ -1,5 +1,5 @@
 use anyhow::Result;
-use log::{debug, info};
+use log::info;
 use statrs::distribution::{Beta, ContinuousCDF};
 use statrs::statistics::{Distribution, Statistics};
 
