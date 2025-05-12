@@ -9,7 +9,9 @@ use crate::bam::GenomicRange;
 pub struct BayesianModel {
     significance_threshold: f64,
     min_reads: u32,
+    #[allow(dead_code)]
     step: u32,
+    #[allow(dead_code)]
     slide: u32,
 }
 
@@ -112,7 +114,7 @@ impl BayesianModel {
         
         let adjusted_p_value = p_value * (posterior_mean_val / prior_mean_val);
         
-        Ok(adjusted_p_value.min(1.0).max(0.0))
+        Ok(adjusted_p_value.clamp(0.0, 1.0))
     }
     
     fn apply_fdr_correction(
