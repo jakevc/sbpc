@@ -134,10 +134,12 @@ impl Peaks {
         Ok(self.ranges.len())
     }
     
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.ranges.len()
     }
     
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.ranges.is_empty()
     }

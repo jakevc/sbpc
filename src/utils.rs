@@ -2,10 +2,12 @@ use anyhow::Result;
 use log::debug;
 use std::path::Path;
 
+#[allow(dead_code)]
 pub fn file_exists<P: AsRef<Path>>(path: P) -> bool {
     path.as_ref().exists()
 }
 
+#[allow(dead_code)]
 pub fn ensure_dir<P: AsRef<Path>>(path: P) -> Result<()> {
     let path = path.as_ref();
     if !path.exists() {
@@ -14,6 +16,7 @@ pub fn ensure_dir<P: AsRef<Path>>(path: P) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn file_stem<P: AsRef<Path>>(path: P) -> Option<String> {
     path.as_ref()
         .file_stem()
@@ -21,6 +24,7 @@ pub fn file_stem<P: AsRef<Path>>(path: P) -> Option<String> {
         .map(String::from)
 }
 
+#[allow(dead_code)]
 pub fn file_extension<P: AsRef<Path>>(path: P) -> Option<String> {
     path.as_ref()
         .extension()
@@ -28,6 +32,7 @@ pub fn file_extension<P: AsRef<Path>>(path: P) -> Option<String> {
         .map(String::from)
 }
 
+#[allow(dead_code)]
 pub fn format_with_commas(num: usize) -> String {
     let mut s = String::new();
     let num_str = num.to_string();
@@ -43,6 +48,7 @@ pub fn format_with_commas(num: usize) -> String {
     s
 }
 
+#[allow(dead_code)]
 pub fn calculate_memory_usage() -> Result<f64> {
     
     let mut memory_usage = 0.0;
