@@ -67,6 +67,48 @@ Two output files are generated each with the output prefix ${prefix}, set to "sa
 
 SBPC uses a Bayesian statistical framework to evaluate the probabilities of regions being peaks. Unlike sliding window approaches, SBPC's Bayesian model allows for p-value multiplication of independent statistical tests, providing more accurate peak detection.
 
+### Bayesian Statistical Framework
+
+The algorithm implements a Bayesian approach to peak calling that:
+
+1. **Prior Distribution**: Uses a Beta distribution as the prior for read enrichment, with parameters derived from the global read distribution. This captures the background expectation of read counts across the genome.
+
+2. **Posterior Calculation**: For each genomic bin, calculates a posterior probability by updating the prior with observed read counts. This uses Bayes' theorem to determine the probability that a region is enriched beyond what would be expected by chance.
+
+3. **Adaptive Parameter Estimation**: Automatically estimates the alpha and beta parameters of the Beta distribution based on the mean and variance of non-zero read counts, making the model adaptable to different datasets.
+
+4. **Independent Tests**: Treats each genomic bin as an independent statistical test, allowing for the multiplication of p-values when merging adjacent significant regions.
+
+### P-value Calculation
+
+P-values are calculated through a multi-step process:
+
+1. **Bayesian P-value**: For each bin, calculates a p-value representing the probability of observing the given read enrichment or greater under the background model.
+
+2. **Posterior Adjustment**: Adjusts raw p-values based on the ratio of posterior to prior means, which helps account for local biases in read distribution.
+
+3. **FDR Correction**: Applies Benjamini-Hochberg false discovery rate (FDR) correction to control for multiple testing, ensuring that the reported significant regions maintain the specified significance threshold.
+
+4. **Peak Merging**: When adjacent significant bins are merged into peaks, their p-values are multiplied together, resulting in a combined p-value that represents the joint significance of the entire peak region.
+
+5. **BED File Output**: Each peak's p-value is written to the score column (column 5) of the output BED file in scientific notation with 6 decimal places, allowing for downstream filtering and analysis.
+
+### Memory Optimization
+
+SBPC implements several strategies to optimize memory usage and avoid linear scaling with BAM file size:
+
+1. **Efficient Binning**: Uses a smart binning strategy that only stores information for bins with reads, rather than pre-allocating bins for the entire genome.
+
+2. **Streaming Processing**: Processes BAM files in a streaming fashion, avoiding loading the entire file into memory.
+
+3. **Chromosome Filtering**: Automatically filters out non-standard chromosomes (e.g., unplaced contigs, mitochondrial DNA) to reduce memory footprint.
+
+4. **Parallel Processing**: Utilizes Rayon for parallel processing of independent chromosomes, improving performance without increasing memory usage.
+
+5. **Memory-Efficient Data Structures**: Uses compact data structures to represent genomic ranges and read counts, minimizing memory overhead.
+
+These optimizations allow SBPC to process large BAM files with a relatively constant memory footprint, unlike approaches that scale linearly with input size.
+
 ## License
 
 MIT
