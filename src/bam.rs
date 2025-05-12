@@ -70,7 +70,7 @@ impl BamProcessor {
         let mut bam = bam::Reader::from_path(&self.bam_path)
             .context(format!("Failed to open BAM file: {}", self.bam_path))?;
         
-        let target_names = bam.header().target_names().to_owned();
+        let target_names: Vec<Vec<u8>> = bam.header().target_names().iter().map(|&name| name.to_vec()).collect();
         
         for record in bam.records() {
             let rec = record?;
@@ -135,7 +135,7 @@ impl BamProcessor {
         let mut control_bam = bam::Reader::from_path(control_path)
             .context(format!("Failed to open control BAM file: {}", control_path))?;
         
-        let target_names = control_bam.header().target_names().to_owned();
+        let target_names: Vec<Vec<u8>> = control_bam.header().target_names().iter().map(|&name| name.to_vec()).collect();
         
         for record in control_bam.records() {
             let rec = record?;
