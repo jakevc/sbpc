@@ -1,4 +1,3 @@
-
 pub mod bam;
 pub mod bayesian;
 pub mod cli;

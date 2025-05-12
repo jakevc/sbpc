@@ -18,7 +18,13 @@ pub struct Metrics {
 }
 
 impl Metrics {
-    pub fn new(version: &str, prefix: &str, command: &str, peaks: usize, elapsed: Duration) -> Self {
+    pub fn new(
+        version: &str,
+        prefix: &str,
+        command: &str,
+        peaks: usize,
+        elapsed: Duration,
+    ) -> Self {
         Self {
             version: version.to_string(),
             date: Local::now().format("%Y-%m-%d %I:%M:%S %p").to_string(),

@@ -37,22 +37,21 @@ pub fn format_with_commas(num: usize) -> String {
     let mut s = String::new();
     let num_str = num.to_string();
     let len = num_str.len();
-    
+
     for (i, c) in num_str.chars().enumerate() {
         s.push(c);
         if (len - i - 1) % 3 == 0 && i < len - 1 {
             s.push(',');
         }
     }
-    
+
     s
 }
 
 #[allow(dead_code)]
 pub fn calculate_memory_usage() -> Result<f64> {
-    
     let mut memory_usage = 0.0;
-    
+
     #[cfg(target_os = "linux")]
     {
         if let Ok(status) = std::fs::read_to_string("/proc/self/status") {
@@ -69,8 +68,8 @@ pub fn calculate_memory_usage() -> Result<f64> {
             }
         }
     }
-    
+
     debug!("Current memory usage: {:.2} MB", memory_usage);
-    
+
     Ok(memory_usage)
 }
