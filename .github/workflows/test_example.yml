@@ -1,0 +1,57 @@
+name: Test with Example Data
+
+on:
+  push:
+    branches: [ main, "devin/*" ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pysam numpy
+
+      - name: Generate test data
+        run: |
+          cd tests/data
+          python generate_test_data.py --reads 1000 --peaks 5
+          ls -la
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Build SBPC
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Run SBPC on test data
+        run: |
+          ./target/release/sbpc -b tests/data/test_sample.bam -c tests/data/test_control.bam -o tests/data/test_output --verbose
+          
+      - name: Display output metrics
+        run: |
+          echo "=== SBPC Output Metrics ==="
+          cat tests/data/test_output_sbpc.json
+          
+          echo "=== SBPC Detected Peaks ==="
+          head -n 10 tests/data/test_output_peaks.bed
+          
+          echo "=== True Peaks (for comparison) ==="
+          cat tests/data/test_true_peaks.bed
+          
+          echo "=== Peak Detection Statistics ==="
+          echo "Number of detected peaks: $(wc -l < tests/data/test_output_peaks.bed)"
+          echo "Number of true peaks: $(wc -l < tests/data/test_true_peaks.bed)"
