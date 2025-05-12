@@ -39,16 +39,16 @@ impl BayesianModel {
         let mut significant_bins = Vec::new();
         let mut p_values = Vec::new();
         
-        for (bin, &count) in bin_counts {
-            if count < self.min_reads as usize {
+        for (bin, count) in bin_counts {
+            if *count < self.min_reads as usize {
                 continue;
             }
             
-            let posterior_alpha = alpha + count as f64;
-            let posterior_beta = beta + (total_reads - count) as f64;
+            let posterior_alpha = alpha + *count as f64;
+            let posterior_beta = beta + (total_reads - *count) as f64;
             
             let p_value = self.calculate_bayesian_p_value(
-                count as f64 / total_reads as f64,
+                *count as f64 / total_reads as f64,
                 &prior_distribution,
                 posterior_alpha,
                 posterior_beta,
@@ -75,7 +75,7 @@ impl BayesianModel {
     ) -> (f64, f64) {
         let non_zero_counts: Vec<f64> = bin_counts
             .iter()
-            .filter_map(|(_, &count)| if count > 0 { Some(count as f64) } else { None })
+            .filter_map(|(_, count)| if *count > 0 { Some(*count as f64) } else { None })
             .collect();
         
         let mean = non_zero_counts.mean();
@@ -107,7 +107,10 @@ impl BayesianModel {
         let posterior_distribution = Beta::new(posterior_alpha, posterior_beta)?;
         let posterior_mean = posterior_distribution.mean();
         
-        let adjusted_p_value = p_value * (posterior_mean / prior_distribution.mean());
+        let posterior_mean_val = posterior_mean.unwrap_or(0.5);
+        let prior_mean_val = prior_distribution.mean().unwrap_or(0.5);
+        
+        let adjusted_p_value = p_value * (posterior_mean_val / prior_mean_val);
         
         Ok(adjusted_p_value.min(1.0).max(0.0))
     }

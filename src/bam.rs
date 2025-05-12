@@ -78,9 +78,11 @@ impl BamProcessor {
             }
             
             let tid = rec.tid();
-            let chrom = match bam.header().target_name(tid as u32) {
-                Some(name) => std::str::from_utf8(name)?.to_string(),
-                None => continue,
+            let target_names = bam.header().target_names();
+            let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
+                std::str::from_utf8(target_names[tid as usize])?.to_string()
+            } else {
+                continue;
             };
             
             let pos = rec.pos() as u32;
@@ -140,9 +142,11 @@ impl BamProcessor {
             }
             
             let tid = rec.tid();
-            let chrom = match control_bam.header().target_name(tid as u32) {
-                Some(name) => std::str::from_utf8(name)?.to_string(),
-                None => continue,
+            let target_names = control_bam.header().target_names();
+            let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
+                std::str::from_utf8(target_names[tid as usize])?.to_string()
+            } else {
+                continue;
             };
             
             let pos = rec.pos() as u32;
