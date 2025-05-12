@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::{info, warn};
+use log::info;
 use std::time::Instant;
 
 mod cli;
