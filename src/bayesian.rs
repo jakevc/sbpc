@@ -1,6 +1,6 @@
 use anyhow::Result;
 use log::{debug, info};
-use statrs::distribution::{Beta, ContinuousCDF};
+use statrs::distribution::{Beta, ContinuousCDF, Distribution};
 use statrs::statistics::Statistics;
 use std::collections::HashMap;
 

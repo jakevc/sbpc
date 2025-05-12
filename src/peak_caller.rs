@@ -72,7 +72,7 @@ impl PeakCaller {
         
         let merged: Vec<GenomicRange> = chrom_bins
             .par_iter()
-            .flat_map(|(chrom, bins)| {
+            .flat_map(|(_chrom, bins)| {
                 let mut sorted_bins = bins.clone();
                 sorted_bins.sort_by_key(|b| b.start);
                 

@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use log::{debug, info};
-use rust_htslib::bam;
+use rust_htslib::bam::{self, Read};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
