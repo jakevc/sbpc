@@ -77,7 +77,7 @@ impl Genome {
         Ok(filtered)
     }
     
-    fn filter_known_chromosomes(seqnames: Vec<String>, lengths: Vec<u32>) -> Self {
+    pub fn filter_known_chromosomes(seqnames: Vec<String>, lengths: Vec<u32>) -> Self {
         let filter_pattern = "Un|_|EBV|N|M";
         
         let mut filtered_seqnames = Vec::new();
