@@ -126,7 +126,7 @@ impl Peaks {
         for range in &self.ranges {
             writeln!(
                 writer,
-                "{}\t{}\t{}\t.\t{:.6e}",
+                "{}\t{}\t{}\tpeak\t{:.6e}\t.",
                 range.chrom, range.start, range.end, range.p_value
             )?;
         }
