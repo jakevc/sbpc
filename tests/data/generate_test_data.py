@@ -32,7 +32,7 @@ def generate_peak_regions(num_peaks, header):
         chrom = header['SQ'][chrom_idx]['SN']
         chrom_len = header['SQ'][chrom_idx]['LN']
         
-        width = np.random.randint(200, 500)
+        width = np.random.randint(150, 300)
         start = np.random.randint(0, chrom_len - width)
         end = start + width
         
@@ -44,7 +44,40 @@ def generate_reads(num_reads, peaks, header, is_control=False):
     """Generate random reads, with enrichment in peak regions for sample."""
     reads = []
     
-    peak_prob = 0.7 if not is_control else 0.2
+    peak_prob = 0.9 if not is_control else 0.1
+    
+    if not is_control:
+        for peak_idx, (chrom, peak_start, peak_end) in enumerate(peaks):
+            for i in range(50):
+                read_id = num_reads + peak_idx * 50 + i
+                
+                pos = np.random.randint(peak_start, peak_end - 50)
+                tlen = np.random.randint(50, 100)  # Shorter fragments for more precise peaks
+                
+                read1 = pysam.AlignedSegment()
+                read1.query_name = f"peak_read_{read_id}_1"
+                read1.reference_id = next(idx for idx, sq in enumerate(header['SQ']) if sq['SN'] == chrom)
+                read1.reference_start = pos
+                read1.mapping_quality = 60
+                read1.cigartuples = [(0, 75)]  # 75M (75bp match)
+                read1.flag = 99  # Paired, mapped, first in pair
+                read1.template_length = tlen
+                read1.next_reference_id = read1.reference_id
+                read1.next_reference_start = pos + tlen - 75
+                
+                read2 = pysam.AlignedSegment()
+                read2.query_name = f"peak_read_{read_id}_1"
+                read2.reference_id = read1.reference_id
+                read2.reference_start = read1.next_reference_start
+                read2.mapping_quality = 60
+                read2.cigartuples = [(0, 75)]  # 75M (75bp match)
+                read2.flag = 147  # Paired, mapped, second in pair, reverse strand
+                read2.template_length = -tlen
+                read2.next_reference_id = read1.reference_id
+                read2.next_reference_start = read1.reference_start
+                
+                reads.append(read1)
+                reads.append(read2)
     
     for i in range(num_reads):
         in_peak = np.random.random() < peak_prob

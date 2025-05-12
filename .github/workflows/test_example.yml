@@ -21,7 +21,7 @@ jobs:
       - name: Generate test data
         run: |
           cd tests/data
-          python generate_test_data.py --reads 1000 --peaks 5
+          python generate_test_data.py --reads 5000 --peaks 5
           ls -la
 
       - name: Set up Rust
