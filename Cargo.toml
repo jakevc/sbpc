@@ -1,0 +1,31 @@
+[package]
+name = "sbpc"
+version = "0.1.0"
+edition = "2021"
+description = "Simple Bayesian Peak Caller for genomic data"
+authors = ["Jake VanCampen <jake.vancampen7@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/jakevc/sbpc"
+
+[dependencies]
+# BAM file parsing
+rust-htslib = "0.44.1"
+# Command line argument parsing
+clap = { version = "4.4.11", features = ["derive"] }
+# Statistical analysis
+statrs = "0.16.0"
+# Parallel processing
+rayon = "1.8.0"
+# Error handling
+anyhow = "1.0.75"
+thiserror = "1.0.50"
+# Logging
+log = "0.4.20"
+env_logger = "0.10.1"
+# Serialization
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+# Utilities
+itertools = "0.12.0"
+chrono = "0.4.31"
