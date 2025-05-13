@@ -95,5 +95,5 @@ jobs:
       - name: Upload binary to release
         uses: softprops/action-gh-release@v1
         with:
-          files: ./sbpc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
-          tag_name: ${{ github.ref }}
+          files: sbpc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          tag_name: ${{ github.ref_name }}
