@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-05-13
+### Changed
+- Updated release workflow to only trigger on semver tags pushed to main branch
+
 ## [0.1.0] - 2025-05-12
 
 ### Added
