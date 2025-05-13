@@ -8,8 +8,34 @@ on:
 permissions:
   contents: write
 
+# Only run this workflow when a tag is pushed to the main branch
 jobs:
+  check-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      is_main: ${{ steps.check.outputs.is_main }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Check if tag is on main branch
+        id: check
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          BRANCH=$(git branch -r --contains $TAG_NAME | grep -v HEAD | sed -e 's/^[[:space:]]*//' -e 's/^origin\///')
+          
+          if [[ "$BRANCH" == "main" ]]; then
+            echo "is_main=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_main=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Tag is on branch: $BRANCH"
+
   release:
+    needs: check-branch
+    if: needs.check-branch.outputs.is_main == 'true'
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
@@ -46,7 +72,8 @@ jobs:
             <!-- Release notes go here -->
 
   build-release:
-    needs: release
+    needs: [check-branch, release]
+    if: needs.check-branch.outputs.is_main == 'true'
     name: Build Release - ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     permissions:
