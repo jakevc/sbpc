@@ -1,0 +1,38 @@
+name: Version Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Cargo.toml'
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check if version was updated
+        run: |
+          # Get the base branch
+          BASE_BRANCH="origin/${{ github.base_ref }}"
+          
+          # Extract version from current Cargo.toml
+          CURRENT_VERSION=$(grep -m 1 "version = " Cargo.toml | cut -d '"' -f 2)
+          
+          # Extract version from base branch Cargo.toml
+          git show "$BASE_BRANCH:Cargo.toml" > base_cargo.toml
+          BASE_VERSION=$(grep -m 1 "version = " base_cargo.toml | cut -d '"' -f 2)
+          
+          echo "Current version: $CURRENT_VERSION"
+          echo "Base version: $BASE_VERSION"
+          
+          # Compare versions
+          if [ "$CURRENT_VERSION" = "$BASE_VERSION" ]; then
+            echo "::error::Version in Cargo.toml was not updated. Please increment the version number."
+            exit 1
+          else
+            echo "Version was updated from $BASE_VERSION to $CURRENT_VERSION"
+          fi

@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: SBPC ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          body: |
+            SBPC (Simple Bayesian Peak Caller) ${{ github.ref_name }}
+            
+            ## Installation
+            
+            ### Linux
+            ```bash
+            curl -L https://github.com/jakevc/sbpc/releases/download/${{ github.ref_name }}/sbpc-${{ github.ref_name }}-x86_64-unknown-linux-gnu.tar.gz | tar xz
+            sudo mv sbpc /usr/local/bin/
+            ```
+            
+            ### macOS
+            ```bash
+            curl -L https://github.com/jakevc/sbpc/releases/download/${{ github.ref_name }}/sbpc-${{ github.ref_name }}-x86_64-apple-darwin.tar.gz | tar xz
+            sudo mv sbpc /usr/local/bin/
+            ```
+            
+            ## Changes
+            
+            <!-- Release notes go here -->
+
+  build-release:
+    needs: create-release
+    name: Build Release - ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: Install dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+
+      - name: Build binary
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target ${{ matrix.target }}
+
+      - name: Package binary
+        shell: bash
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czvf ../../../sbpc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz sbpc
+          cd -
+
+      - name: Upload binary to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./sbpc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          asset_name: sbpc-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+          asset_content_type: application/gzip

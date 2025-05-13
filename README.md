@@ -12,6 +12,29 @@ SBPC is a peak caller for genomic data that implements a Bayesian statistical fr
 
 ## Installation
 
+### Pre-built Binaries
+
+#### Linux
+
+```bash
+curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.0/sbpc-v0.1.0-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv sbpc /usr/local/bin/
+```
+
+#### macOS (Intel)
+
+```bash
+curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.0/sbpc-v0.1.0-x86_64-apple-darwin.tar.gz | tar xz
+sudo mv sbpc /usr/local/bin/
+```
+
+#### macOS (Apple Silicon)
+
+```bash
+curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.0/sbpc-v0.1.0-aarch64-apple-darwin.tar.gz | tar xz
+sudo mv sbpc /usr/local/bin/
+```
+
 ### Using Cargo
 
 ```bash
