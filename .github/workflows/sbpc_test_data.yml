@@ -1,0 +1,77 @@
+name: Test SBPC with Public Data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-public-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhts-dev
+      
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      
+      - name: Download and extract test data
+        run: |
+          curl https://cuttag.s3.us-east-1.amazonaws.com/cuttag.tar.gz | tar -xf -
+          ls -la bowtie2/
+      
+      - name: Build SBPC
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      
+      - name: Run SBPC on test samples
+        run: |
+          # Define a function to run sbpc with sample and control
+          run_sbpc() {
+            sample=$1
+            control=$2
+            output_prefix=$(basename $sample .bam)
+            
+            echo "Processing $sample with control $control"
+            ./target/release/sbpc -b bowtie2/$sample -c bowtie2/$control -o bowtie2/$output_prefix --verbose
+            
+            echo "Metrics for $output_prefix:"
+            cat bowtie2/${output_prefix}_sbpc.json
+            echo "Peaks found: $(wc -l < bowtie2/${output_prefix}_peaks.bed)"
+            echo "---------------------------------------------"
+          }
+          
+          # Run for each sample with its corresponding IgG control
+          run_sbpc "K562_1_H3K4me1.bam" "K562_1_IgG.bam"
+          run_sbpc "K562_1_H3K4me2.bam" "K562_1_IgG.bam"
+          run_sbpc "K562_1_H3K4me3.bam" "K562_1_IgG.bam"
+          run_sbpc "K562_2_H3K4me1.bam" "K562_2_IgG.bam"
+          run_sbpc "K562_2_H3K4me2.bam" "K562_2_IgG.bam"
+          run_sbpc "K562_2_H3K4me3.bam" "K562_2_IgG.bam"
+      
+      - name: Create summary report
+        run: |
+          echo "## SBPC Test Results Summary" > summary.md
+          echo "" >> summary.md
+          echo "| Sample | Control | Peaks Found |" >> summary.md
+          echo "| ------ | ------- | ----------- |" >> summary.md
+          
+          for sample in K562_1_H3K4me1 K562_1_H3K4me2 K562_1_H3K4me3 K562_2_H3K4me1 K562_2_H3K4me2 K562_2_H3K4me3; do
+            control=$(echo $sample | sed 's/H3K4me[123]/IgG/')
+            peaks=$(wc -l < bowtie2/${sample}_peaks.bed)
+            echo "| $sample | $control | $peaks |" >> summary.md
+          done
+          
+          cat summary.md
