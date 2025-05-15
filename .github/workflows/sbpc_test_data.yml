@@ -16,6 +16,7 @@ jobs:
       
       - name: Cache Cargo registry
         uses: actions/cache@v4
+
         with:
           path: |
             ~/.cargo/registry
@@ -38,6 +39,7 @@ jobs:
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+
         with:
           name: sbpc-build
           path: |
@@ -67,6 +69,7 @@ jobs:
       
       - name: Download build artifacts
         uses: actions/download-artifact@v4
+
         with:
           name: sbpc-build
       
@@ -91,6 +94,7 @@ jobs:
       
       - name: Upload metrics
         uses: actions/upload-artifact@v4
+
         with:
           name: metrics-${{ matrix.sample.name }}
           path: metrics/
@@ -101,6 +105,7 @@ jobs:
     steps:
       - name: Download all metrics
         uses: actions/download-artifact@v4
+
         with:
           path: all-metrics
       
@@ -121,6 +126,7 @@ jobs:
       
       - name: Upload summary
         uses: actions/upload-artifact@v4
+
         with:
           name: summary-report
           path: summary.md
