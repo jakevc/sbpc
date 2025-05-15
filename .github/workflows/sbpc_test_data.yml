@@ -28,7 +28,7 @@ jobs:
       
       - name: Download and extract test data
         run: |
-          curl https://cuttag.s3.us-east-1.amazonaws.com/cuttag.tar.gz | tar -xf -
+          curl https://cuttag.s3.us-east-1.amazonaws.com/cuttag.tar.gz | tar -xfz -
           ls -la bowtie2/
       
       - name: Build SBPC
