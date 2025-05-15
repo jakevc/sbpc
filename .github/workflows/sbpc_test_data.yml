@@ -7,7 +7,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install dependencies
         run: |
@@ -15,7 +15,8 @@ jobs:
           sudo apt-get install -y libhts-dev
       
       - name: Cache Cargo registry
-        uses: actions/cache@v3
+        uses: actions/cache@v4
+
         with:
           path: |
             ~/.cargo/registry
@@ -37,7 +38,8 @@ jobs:
           args: --release
       
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+
         with:
           name: sbpc-build
           path: |
@@ -58,7 +60,7 @@ jobs:
           { name: "K562_2_H3K4me3.bam", control: "K562_2_IgG.bam" }
         ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install dependencies
         run: |
@@ -66,7 +68,8 @@ jobs:
           sudo apt-get install -y libhts-dev
       
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+
         with:
           name: sbpc-build
       
@@ -90,7 +93,8 @@ jobs:
           echo "$(wc -l < bowtie2/${output_prefix}_peaks.bed)" > metrics/${output_prefix}_peak_count.txt
       
       - name: Upload metrics
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+
         with:
           name: metrics-${{ matrix.sample.name }}
           path: metrics/
@@ -100,7 +104,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all metrics
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+
         with:
           path: all-metrics
       
@@ -120,7 +125,8 @@ jobs:
           cat summary.md
       
       - name: Upload summary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+
         with:
           name: summary-report
           path: summary.md
