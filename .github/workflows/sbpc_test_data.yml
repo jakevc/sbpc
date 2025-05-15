@@ -1,0 +1,126 @@
+name: Test SBPC with Public Data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhts-dev
+      
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      
+      - name: Download and extract test data
+        run: |
+          curl https://cuttag.s3.us-east-1.amazonaws.com/cuttag.tar.gz | tar -xf -
+          ls -la bowtie2/
+      
+      - name: Build SBPC
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbpc-build
+          path: |
+            target/release/sbpc
+            bowtie2/
+  
+  test-samples:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sample: [
+          { name: "K562_1_H3K4me1.bam", control: "K562_1_IgG.bam" },
+          { name: "K562_1_H3K4me2.bam", control: "K562_1_IgG.bam" },
+          { name: "K562_1_H3K4me3.bam", control: "K562_1_IgG.bam" },
+          { name: "K562_2_H3K4me1.bam", control: "K562_2_IgG.bam" },
+          { name: "K562_2_H3K4me2.bam", control: "K562_2_IgG.bam" },
+          { name: "K562_2_H3K4me3.bam", control: "K562_2_IgG.bam" }
+        ]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhts-dev
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sbpc-build
+      
+      - name: Make sbpc executable
+        run: chmod +x target/release/sbpc
+      
+      - name: Run SBPC on ${{ matrix.sample.name }}
+        run: |
+          output_prefix=$(basename ${{ matrix.sample.name }} .bam)
+          
+          echo "Processing ${{ matrix.sample.name }} with control ${{ matrix.sample.control }}"
+          ./target/release/sbpc -b bowtie2/${{ matrix.sample.name }} -c bowtie2/${{ matrix.sample.control }} -o bowtie2/$output_prefix --verbose
+          
+          echo "Metrics for $output_prefix:"
+          cat bowtie2/${output_prefix}_sbpc.json
+          echo "Peaks found: $(wc -l < bowtie2/${output_prefix}_peaks.bed)"
+          
+          # Save metrics for summary
+          mkdir -p metrics
+          cp bowtie2/${output_prefix}_sbpc.json metrics/
+          echo "$(wc -l < bowtie2/${output_prefix}_peaks.bed)" > metrics/${output_prefix}_peak_count.txt
+      
+      - name: Upload metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics-${{ matrix.sample.name }}
+          path: metrics/
+  
+  create-summary:
+    needs: test-samples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all metrics
+        uses: actions/download-artifact@v3
+        with:
+          path: all-metrics
+      
+      - name: Create summary report
+        run: |
+          echo "## SBPC Test Results Summary" > summary.md
+          echo "" >> summary.md
+          echo "| Sample | Control | Peaks Found |" >> summary.md
+          echo "| ------ | ------- | ----------- |" >> summary.md
+          
+          for sample in K562_1_H3K4me1 K562_1_H3K4me2 K562_1_H3K4me3 K562_2_H3K4me1 K562_2_H3K4me2 K562_2_H3K4me3; do
+            control=$(echo $sample | sed 's/H3K4me[123]/IgG/')
+            peaks=$(cat all-metrics/metrics-${sample}.bam/${sample}_peak_count.txt)
+            echo "| $sample | $control | $peaks |" >> summary.md
+          done
+          
+          cat summary.md
+      
+      - name: Upload summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: summary-report
+          path: summary.md
