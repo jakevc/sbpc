@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-public-data:
+  setup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -36,30 +36,73 @@ jobs:
           command: build
           args: --release
       
-      - name: Run SBPC on test samples
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbpc-build
+          path: |
+            target/release/sbpc
+            bowtie2/
+  
+  test-samples:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sample: [
+          { name: "K562_1_H3K4me1.bam", control: "K562_1_IgG.bam" },
+          { name: "K562_1_H3K4me2.bam", control: "K562_1_IgG.bam" },
+          { name: "K562_1_H3K4me3.bam", control: "K562_1_IgG.bam" },
+          { name: "K562_2_H3K4me1.bam", control: "K562_2_IgG.bam" },
+          { name: "K562_2_H3K4me2.bam", control: "K562_2_IgG.bam" },
+          { name: "K562_2_H3K4me3.bam", control: "K562_2_IgG.bam" }
+        ]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install dependencies
         run: |
-          # Define a function to run sbpc with sample and control
-          run_sbpc() {
-            sample=$1
-            control=$2
-            output_prefix=$(basename $sample .bam)
-            
-            echo "Processing $sample with control $control"
-            ./target/release/sbpc -b bowtie2/$sample -c bowtie2/$control -o bowtie2/$output_prefix --verbose
-            
-            echo "Metrics for $output_prefix:"
-            cat bowtie2/${output_prefix}_sbpc.json
-            echo "Peaks found: $(wc -l < bowtie2/${output_prefix}_peaks.bed)"
-            echo "---------------------------------------------"
-          }
+          sudo apt-get update
+          sudo apt-get install -y libhts-dev
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: sbpc-build
+      
+      - name: Make sbpc executable
+        run: chmod +x target/release/sbpc
+      
+      - name: Run SBPC on ${{ matrix.sample.name }}
+        run: |
+          output_prefix=$(basename ${{ matrix.sample.name }} .bam)
           
-          # Run for each sample with its corresponding IgG control
-          run_sbpc "K562_1_H3K4me1.bam" "K562_1_IgG.bam"
-          run_sbpc "K562_1_H3K4me2.bam" "K562_1_IgG.bam"
-          run_sbpc "K562_1_H3K4me3.bam" "K562_1_IgG.bam"
-          run_sbpc "K562_2_H3K4me1.bam" "K562_2_IgG.bam"
-          run_sbpc "K562_2_H3K4me2.bam" "K562_2_IgG.bam"
-          run_sbpc "K562_2_H3K4me3.bam" "K562_2_IgG.bam"
+          echo "Processing ${{ matrix.sample.name }} with control ${{ matrix.sample.control }}"
+          ./target/release/sbpc -b bowtie2/${{ matrix.sample.name }} -c bowtie2/${{ matrix.sample.control }} -o bowtie2/$output_prefix --verbose
+          
+          echo "Metrics for $output_prefix:"
+          cat bowtie2/${output_prefix}_sbpc.json
+          echo "Peaks found: $(wc -l < bowtie2/${output_prefix}_peaks.bed)"
+          
+          # Save metrics for summary
+          mkdir -p metrics
+          cp bowtie2/${output_prefix}_sbpc.json metrics/
+          echo "$(wc -l < bowtie2/${output_prefix}_peaks.bed)" > metrics/${output_prefix}_peak_count.txt
+      
+      - name: Upload metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics-${{ matrix.sample.name }}
+          path: metrics/
+  
+  create-summary:
+    needs: test-samples
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all metrics
+        uses: actions/download-artifact@v3
+        with:
+          path: all-metrics
       
       - name: Create summary report
         run: |
@@ -70,8 +113,14 @@ jobs:
           
           for sample in K562_1_H3K4me1 K562_1_H3K4me2 K562_1_H3K4me3 K562_2_H3K4me1 K562_2_H3K4me2 K562_2_H3K4me3; do
             control=$(echo $sample | sed 's/H3K4me[123]/IgG/')
-            peaks=$(wc -l < bowtie2/${sample}_peaks.bed)
+            peaks=$(cat all-metrics/metrics-${sample}.bam/${sample}_peak_count.txt)
             echo "| $sample | $control | $peaks |" >> summary.md
           done
           
           cat summary.md
+      
+      - name: Upload summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: summary-report
+          path: summary.md
