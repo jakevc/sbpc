@@ -51,6 +51,20 @@ cargo build --release
 
 The binary will be available at `target/release/sbpc`.
 
+### Using Docker
+
+You can also run SBPC using Docker, which avoids the need to install system dependencies:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/jakevc/sbpc:latest
+
+# Run SBPC with Docker
+docker run --rm -v /path/to/data:/data ghcr.io/jakevc/sbpc:latest -b /data/sample.bam -c /data/control.bam -o /data/output_prefix
+```
+
+This approach eliminates issues with glibc dependencies across different platforms, making it easier to use SBPC regardless of your operating system.
+
 ## Usage
 
 ```
