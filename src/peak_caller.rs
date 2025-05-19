@@ -40,25 +40,51 @@ impl PeakCaller {
     pub fn call_peaks(&mut self) -> Result<Peaks> {
         info!("Starting peak calling with Bayesian framework");
 
-        let bins = self.genome.create_bins(self.cli.step, self.cli.slide)?;
+        // Parallelize per chromosome
+        let chroms: Vec<String> = self.genome.seqnames.clone();
+        let step = self.cli.step;
+        let slide = self.cli.slide;
+        let mdist = self.cli.mdist;
+        let minwidth = self.cli.minwidth;
+        let bayesian_model = &self.bayesian_model;
+        let bam_processor = &self.bam_processor;
+        let total_reads = bam_processor.total_reads();
 
-        let bin_counts = self.bam_processor.count_reads_in_bins(&bins)?;
-
-        let significant_bins = self
-            .bayesian_model
-            .identify_significant_bins(&bin_counts, self.bam_processor.total_reads())?;
-
-        let merged_peaks = self.merge_bins_into_peaks(significant_bins, self.cli.mdist)?;
-
-        let filtered_peaks = self.filter_peaks_by_width(merged_peaks, self.cli.minwidth)?;
+        let all_peaks: Vec<GenomicRange> = chroms
+            .par_iter()
+            .flat_map(|chrom| {
+                // Create bins for this chromosome only
+                let bins: Vec<GenomicRange> = self
+                    .genome
+                    .create_bins(step, slide)
+                    .unwrap()
+                    .into_iter()
+                    .filter(|b| &b.chrom == chrom)
+                    .collect();
+                if bins.is_empty() {
+                    return Vec::new();
+                }
+                // Count reads in bins for this chromosome
+                let bin_counts = bam_processor.count_reads_in_bins(&bins).unwrap();
+                // Identify significant bins
+                let significant_bins = bayesian_model
+                    .identify_significant_bins(&bin_counts, total_reads)
+                    .unwrap();
+                // Merge bins into peaks for this chromosome
+                let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
+                // Filter peaks by width
+                let filtered_peaks = self.filter_peaks_by_width(merged_peaks, minwidth).unwrap();
+                filtered_peaks
+            })
+            .collect();
 
         info!(
             "Peak calling completed, found {} peaks",
-            filtered_peaks.len()
+            all_peaks.len()
         );
 
         Ok(Peaks {
-            ranges: filtered_peaks,
+            ranges: all_peaks,
         })
     }
 
