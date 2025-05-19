@@ -77,14 +77,9 @@ impl PeakCaller {
             })
             .collect();
 
-        info!(
-            "Peak calling completed, found {} peaks",
-            all_peaks.len()
-        );
+        info!("Peak calling completed, found {} peaks", all_peaks.len());
 
-        Ok(Peaks {
-            ranges: all_peaks,
-        })
+        Ok(Peaks { ranges: all_peaks })
     }
 
     fn merge_bins_into_peaks(
