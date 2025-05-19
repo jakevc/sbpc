@@ -15,11 +15,6 @@ fn main() -> anyhow::Result<()> {
 
     let cli = cli::Cli::parse();
 
-    if cli.version {
-        println!("SBPC version: {}", env!("CARGO_PKG_VERSION"));
-        return Ok(());
-    }
-
     let start_time = Instant::now();
 
     let mut peak_caller = peak_caller::PeakCaller::new(&cli)?;

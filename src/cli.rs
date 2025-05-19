@@ -34,9 +34,6 @@ pub struct Cli {
     #[arg(short = 'o', long, default_value = "sample")]
     pub prefix: String,
 
-    #[arg(short = 'v', long)]
-    pub version: bool,
-
     #[arg(long)]
     pub broad: bool,
 
