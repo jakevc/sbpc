@@ -72,9 +72,8 @@ impl PeakCaller {
                     .unwrap();
                 // Merge bins into peaks for this chromosome
                 let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
-                // Filter peaks by width
-                let filtered_peaks = self.filter_peaks_by_width(merged_peaks, minwidth).unwrap();
-                filtered_peaks
+                // Filter peaks by width and return directly
+                self.filter_peaks_by_width(merged_peaks, minwidth).unwrap()
             })
             .collect();
 
