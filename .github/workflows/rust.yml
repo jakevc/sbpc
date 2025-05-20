@@ -33,6 +33,17 @@ jobs:
     
     - name: Build
       run: cargo build --verbose
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pysam numpy
+
+    - name: Generate test data
+      run: |
+        cd tests/data
+        python generate_test_data.py --reads 5000 --peaks 5
+        ls -la
     
     - name: Run tests
       run: cargo test --verbose
