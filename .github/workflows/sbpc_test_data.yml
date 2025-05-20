@@ -28,8 +28,8 @@ jobs:
       
       - name: Download and extract test data
         run: |
-          curl https://cuttag.s3.us-east-1.amazonaws.com/cuttag.tar.gz | tar -xzf -
-          ls -la bowtie2/
+          mkdir -p data 
+          curl ${{ secrets.CUTTAG_URL }} | tar -xzf - -C data 
       
       - name: Build SBPC
         uses: actions-rs/cargo@v1
@@ -44,7 +44,7 @@ jobs:
           name: sbpc-build
           path: |
             target/release/sbpc
-            bowtie2/
+            data
   
   test-samples:
     needs: setup
@@ -52,12 +52,12 @@ jobs:
     strategy:
       matrix:
         sample: [
-          { name: "K562_1_H3K4me1.bam", control: "K562_1_IgG.bam" },
-          { name: "K562_1_H3K4me2.bam", control: "K562_1_IgG.bam" },
-          { name: "K562_1_H3K4me3.bam", control: "K562_1_IgG.bam" },
-          { name: "K562_2_H3K4me1.bam", control: "K562_2_IgG.bam" },
-          { name: "K562_2_H3K4me2.bam", control: "K562_2_IgG.bam" },
-          { name: "K562_2_H3K4me3.bam", control: "K562_2_IgG.bam" }
+          { name: "K562_1_H3K4me1.sort.bam", control: "K562_1_IgG.sort.bam" },
+          { name: "K562_1_H3K4me2.sort.bam", control: "K562_1_IgG.sort.bam" },
+          { name: "K562_1_H3K4me3.sort.bam", control: "K562_1_IgG.sort.bam" },
+          { name: "K562_2_H3K4me1.sort.bam", control: "K562_2_IgG.sort.bam" },
+          { name: "K562_2_H3K4me2.sort.bam", control: "K562_2_IgG.sort.bam" },
+          { name: "K562_2_H3K4me3.sort.bam", control: "K562_2_IgG.sort.bam" }
         ]
     steps:
       - uses: actions/checkout@v4
@@ -81,16 +81,16 @@ jobs:
           output_prefix=$(basename ${{ matrix.sample.name }} .bam)
           
           echo "Processing ${{ matrix.sample.name }} with control ${{ matrix.sample.control }}"
-          ./target/release/sbpc -b bowtie2/${{ matrix.sample.name }} -c bowtie2/${{ matrix.sample.control }} -o bowtie2/$output_prefix --verbose
+          ./target/release/sbpc -b data/${{ matrix.sample.name }} -c data/${{ matrix.sample.control }} -o data/$output_prefix --verbose
           
           echo "Metrics for $output_prefix:"
-          cat bowtie2/${output_prefix}_sbpc.json
-          echo "Peaks found: $(wc -l < bowtie2/${output_prefix}_peaks.bed)"
+          cat data/${output_prefix}_sbpc.json
+          echo "Peaks found: $(wc -l < data/${output_prefix}_peaks.bed)"
           
           # Save metrics for summary
           mkdir -p metrics
-          cp bowtie2/${output_prefix}_sbpc.json metrics/
-          echo "$(wc -l < bowtie2/${output_prefix}_peaks.bed)" > metrics/${output_prefix}_peak_count.txt
+          cp data/${output_prefix}_sbpc.json metrics/
+          echo "$(wc -l < data/${output_prefix}_peaks.bed)" > metrics/${output_prefix}_peak_count.txt
       
       - name: Upload metrics
         uses: actions/upload-artifact@v4
