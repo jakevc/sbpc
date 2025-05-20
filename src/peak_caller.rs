@@ -138,29 +138,25 @@ impl PeakCaller {
 }
 
 pub struct Peaks {
-    ranges: Vec<GenomicRange>,
+    pub ranges: Vec<GenomicRange>,
 }
 
 impl Peaks {
-    pub fn write_to_bed(&self, path: &str) -> Result<usize> {
-        use std::fs::File;
-        use std::io::{BufWriter, Write};
-
-        let file = File::create(path).context("Failed to create BED file")?;
-        let mut writer = BufWriter::new(file);
-
+    pub fn write_to_stdout_bed(&self) -> usize {
+        use std::io::{self, Write};
+        let stdout = io::stdout();
+        let mut handle = stdout.lock();
         for range in &self.ranges {
             writeln!(
-                writer,
+                handle,
                 "{}\t{}\t{}\tpeak\t{:.6e}\t.",
                 range.chrom, range.start, range.end, range.p_value
-            )?;
+            )
+            .unwrap();
         }
-
-        Ok(self.ranges.len())
+        self.ranges.len()
     }
 
-    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.ranges.len()
     }

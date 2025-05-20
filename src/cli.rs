@@ -22,20 +22,20 @@ pub struct Cli {
     #[arg(short = 'p', long, default_value_t = 0.05)]
     pub pval: f64,
 
-    #[arg(short = 't', long, default_value_t = 100)]
+    #[arg(short = 't', long, default_value_t = 200)]
     pub step: u32,
 
     #[arg(short = 'w', long, default_value_t = 150)]
     pub minwidth: u32,
-
-    #[arg(short = 'o', long, default_value = "sample")]
-    pub prefix: String,
 
     #[arg(long)]
     pub broad: bool,
 
     #[arg(long)]
     pub verbose: bool,
+
+    #[arg(long, help = "Write metrics to a file (e.g., <prefix>_sbpc.json)")]
+    pub metrics_file: bool,
 }
 
 impl Cli {

@@ -11,7 +11,6 @@ pub struct Metrics {
     pub version: String,
     pub date: String,
     pub elapsed: String,
-    pub prefix: String,
     pub command: String,
     #[serde(rename = "peak_counts")]
     pub peaks: usize,
@@ -20,7 +19,6 @@ pub struct Metrics {
 impl Metrics {
     pub fn new(
         version: &str,
-        prefix: &str,
         command: &str,
         peaks: usize,
         elapsed: Duration,
@@ -29,7 +27,6 @@ impl Metrics {
             version: version.to_string(),
             date: Local::now().format("%Y-%m-%d %I:%M:%S %p").to_string(),
             elapsed: format!("{:?}", elapsed),
-            prefix: prefix.to_string(),
             command: command.to_string(),
             peaks,
         }
