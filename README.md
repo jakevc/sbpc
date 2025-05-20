@@ -17,21 +17,21 @@ SBPC is a peak caller for genomic data that implements a Bayesian statistical fr
 #### Linux
 
 ```bash
-curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.0/sbpc-v0.1.0-x86_64-unknown-linux-gnu.tar.gz | tar xz
+curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.3/sbpc-v0.1.3-x86_64-unknown-linux-gnu.tar.gz | tar xz
 sudo mv sbpc /usr/local/bin/
 ```
 
 #### macOS (Intel)
 
 ```bash
-curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.0/sbpc-v0.1.0-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.3/sbpc-v0.1.3-x86_64-apple-darwin.tar.gz | tar xz
 sudo mv sbpc /usr/local/bin/
 ```
 
 #### macOS (Apple Silicon)
 
 ```bash
-curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.0/sbpc-v0.1.0-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/jakevc/sbpc/releases/download/v0.1.3/sbpc-v0.1.3-aarch64-apple-darwin.tar.gz | tar xz
 sudo mv sbpc /usr/local/bin/
 ```
 
@@ -64,6 +64,17 @@ docker run --rm -v /path/to/data:/data ghcr.io/jakevc/sbpc:latest -b /data/sampl
 ```
 
 This approach eliminates issues with glibc dependencies across different platforms, making it easier to use SBPC regardless of your operating system.
+
+## Requirements
+
+SBPC requires input BAM files to be **coordinate-sorted** and **indexed**. You can prepare your BAM files using [samtools](http://www.htslib.org/doc/samtools.html):
+
+```bash
+samtools sort -o sorted.bam input.bam
+samtools index sorted.bam
+```
+
+Both the sample and control BAM files must be sorted and have a corresponding `.bai` index file in the same directory.
 
 ## Usage
 

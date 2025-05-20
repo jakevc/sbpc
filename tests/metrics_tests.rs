@@ -6,7 +6,7 @@ use tempfile::tempdir;
 
 #[test]
 fn test_metrics_creation() {
-    let version = "0.1.0";
+    let version = "0.1.3";
     let prefix = "test_sample";
     let command = "sbpc -b test.bam -o test_sample";
     let peaks = 1000;
@@ -27,7 +27,7 @@ fn test_write_to_file() -> Result<()> {
     let dir = tempdir()?;
     let file_path = dir.path().join("test_metrics.json");
 
-    let version = "0.1.0";
+    let version = "0.1.3";
     let prefix = "test_sample";
     let command = "sbpc -b test.bam -o test_sample";
     let peaks = 1000;
