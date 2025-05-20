@@ -1,7 +1,5 @@
 use anyhow::Result;
 use sbpc::bam::{BamProcessor, GenomicRange};
-use tempfile::NamedTempFile;
-use std::io::Write;
 
 #[test]
 fn test_bam_processor_total_reads() -> Result<()> {
@@ -34,10 +32,9 @@ fn test_count_reads_in_bins_basic() -> Result<()> {
     ];
     let counts = processor.count_reads_in_bins(&bins)?;
     assert_eq!(counts.len(), 2);
-    for (bin, count) in counts {
+    for (bin, _count) in counts {
         assert_eq!(bin.chrom, "chr1");
         assert!(bin.start < bin.end);
-        assert!(count >= 0);
     }
     Ok(())
 }
