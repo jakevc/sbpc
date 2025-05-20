@@ -27,7 +27,7 @@ impl PeakCaller {
 
         let bam_processor = BamProcessor::new(&cli.bam, cli.control.as_deref())?;
 
-        let bayesian_model = BayesianModel::new(cli.pval, cli.minreads, cli.step);
+        let bayesian_model = BayesianModel::new(cli.pval, cli.minreads);
 
         Ok(Self {
             cli: cli_copy,
