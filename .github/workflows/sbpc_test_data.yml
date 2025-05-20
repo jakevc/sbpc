@@ -81,7 +81,7 @@ jobs:
           output_prefix=$(basename ${{ matrix.sample.name }} .bam)
           
           echo "Processing ${{ matrix.sample.name }} with control ${{ matrix.sample.control }}"
-          ./target/release/sbpc -b data/${{ matrix.sample.name }} -c data/${{ matrix.sample.control }} -r 5 -o data/$output_prefix --verbose
+          ./target/release/sbpc -b data/${{ matrix.sample.name }} -c data/${{ matrix.sample.control }} -r 5 --metrics-file > data/${output_prefix}_peaks.bed --verbose
           
           echo "Metrics for $output_prefix:"
           cat data/${output_prefix}_sbpc.json

@@ -39,19 +39,19 @@ jobs:
 
       - name: Run SBPC on test data
         run: |
-          ./target/release/sbpc -b tests/data/test_sample.bam -c tests/data/test_control.bam -o tests/data/test_output --verbose -r 1 -p 0.5 -m 500 -w 100
+          ./target/release/sbpc -b tests/data/test_sample.bam -c tests/data/test_control.bam --metrics-file -r 1 --verbose > tests/data/test_sample_peaks.bed 
           
       - name: Display output metrics
         run: |
           echo "=== SBPC Output Metrics ==="
-          cat tests/data/test_output_sbpc.json
+          cat tests/data/test_sample_sbpc.json
           
           echo "=== SBPC Detected Peaks ==="
-          head -n 10 tests/data/test_output_peaks.bed
+          head -n 10 tests/data/test_sample_peaks.bed
           
           echo "=== True Peaks (for comparison) ==="
           cat tests/data/test_true_peaks.bed
           
           echo "=== Peak Detection Statistics ==="
-          echo "Number of detected peaks: $(wc -l < tests/data/test_output_peaks.bed)"
+          echo "Number of detected peaks: $(wc -l < tests/data/test_sample_peaks.bed)"
           echo "Number of true peaks: $(wc -l < tests/data/test_true_peaks.bed)"
