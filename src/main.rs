@@ -11,9 +11,15 @@ mod peak_caller;
 mod utils;
 
 fn main() -> anyhow::Result<()> {
-    env_logger::init();
-
+    // Set RUST_LOG if --verbose is passed, before env_logger::init()
     let cli = cli::Cli::parse();
+    if cli.verbose {
+        // Only set if not already set by user
+        if std::env::var("RUST_LOG").is_err() {
+            std::env::set_var("RUST_LOG", "info");
+        }
+    }
+    env_logger::init();
 
     let start_time = Instant::now();
 
