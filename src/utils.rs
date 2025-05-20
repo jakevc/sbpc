@@ -50,7 +50,7 @@ pub fn format_with_commas(num: usize) -> String {
 
 #[allow(dead_code)]
 pub fn calculate_memory_usage() -> Result<f64> {
-    let memory_usage = 0.0;
+    let mut memory_usage = 0.0;
 
     #[cfg(target_os = "linux")]
     {
