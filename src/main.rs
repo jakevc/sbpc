@@ -51,7 +51,11 @@ fn main() -> anyhow::Result<()> {
     info!("Found {} peaks", peak_count);
     info!(
         "Results printed to stdout; metrics {}",
-        if cli.metrics_file { "also written to file" } else { "printed to stdout only" }
+        if cli.metrics_file {
+            "also written to file"
+        } else {
+            "printed to stdout only"
+        }
     );
 
     Ok(())
