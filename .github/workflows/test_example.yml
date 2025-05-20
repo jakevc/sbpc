@@ -44,7 +44,7 @@ jobs:
       - name: Display output metrics
         run: |
           echo "=== SBPC Output Metrics ==="
-          cat tests/data/test_sample_sbpc.json
+          cat test_sample_sbpc.json
           
           echo "=== SBPC Detected Peaks ==="
           head -n 10 tests/data/test_sample_peaks.bed
