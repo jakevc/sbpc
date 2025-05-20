@@ -8,7 +8,6 @@ mod cli;
 mod genome;
 mod metrics;
 mod peak_caller;
-mod utils;
 
 fn main() -> anyhow::Result<()> {
     // Set RUST_LOG if --verbose is passed, before env_logger::init()

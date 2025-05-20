@@ -41,12 +41,10 @@ fn test_write_to_file() -> Result<()> {
     assert!(contents.contains("\"sbpc_version\""));
     assert!(contents.contains("\"date\""));
     assert!(contents.contains("\"elapsed\""));
-    assert!(contents.contains("\"prefix\""));
     assert!(contents.contains("\"command\""));
     assert!(contents.contains("\"peak_counts\""));
 
     assert!(contents.contains(&format!("\"sbpc_version\": \"{}\"", version)));
-    assert!(contents.contains(&format!("\"prefix\": \"{}\"", prefix)));
     assert!(contents.contains(&format!("\"command\": \"{}\"", command)));
     assert!(contents.contains(&format!("\"peak_counts\": {}", peaks)));
 

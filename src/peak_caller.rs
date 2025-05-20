@@ -2,7 +2,7 @@ use crate::bam::{BamProcessor, GenomicRange};
 use crate::bayesian::BayesianModel;
 use crate::cli::Cli;
 use crate::genome::Genome;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -155,14 +155,5 @@ impl Peaks {
             .unwrap();
         }
         self.ranges.len()
-    }
-
-    pub fn len(&self) -> usize {
-        self.ranges.len()
-    }
-
-    #[allow(dead_code)]
-    pub fn is_empty(&self) -> bool {
-        self.ranges.is_empty()
     }
 }
