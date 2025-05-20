@@ -10,17 +10,14 @@ pub struct BayesianModel {
     min_reads: u32,
     #[allow(dead_code)]
     step: u32,
-    #[allow(dead_code)]
-    slide: u32,
 }
 
 impl BayesianModel {
-    pub fn new(significance_threshold: f64, min_reads: u32, step: u32, slide: u32) -> Self {
+    pub fn new(significance_threshold: f64, min_reads: u32, step: u32) -> Self {
         Self {
             significance_threshold,
             min_reads,
             step,
-            slide,
         }
     }
 

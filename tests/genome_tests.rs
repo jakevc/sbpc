@@ -11,10 +11,7 @@ fn test_create_bins() -> Result<()> {
     let genome = Genome { seqnames, lengths };
 
     let step = 100;
-    let slide = 50;
-
-    // With non-overlapping bins, slide is ignored and only step is used
-    let bins = genome.create_bins(step, slide)?;
+    let bins = genome.create_bins(step)?;
 
     // chr1: 1000/100 = 10 bins, chr2: 500/100 = 5 bins, total = 15
     assert_eq!(bins.len(), 15, "Expected 15 bins for non-overlapping bins");

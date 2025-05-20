@@ -27,7 +27,7 @@ impl PeakCaller {
 
         let bam_processor = BamProcessor::new(&cli.bam, cli.control.as_deref())?;
 
-        let bayesian_model = BayesianModel::new(cli.pval, cli.minreads, cli.step, cli.slide);
+        let bayesian_model = BayesianModel::new(cli.pval, cli.minreads, cli.step);
 
         Ok(Self {
             cli: cli_copy,
@@ -43,7 +43,6 @@ impl PeakCaller {
         // Parallelize per chromosome
         let chroms: Vec<String> = self.genome.seqnames.clone();
         let step = self.cli.step;
-        let slide = self.cli.slide;
         let mdist = self.cli.mdist;
         let minwidth = self.cli.minwidth;
         let bayesian_model = &self.bayesian_model;
@@ -56,7 +55,7 @@ impl PeakCaller {
                 // Create bins for this chromosome only
                 let bins: Vec<GenomicRange> = self
                     .genome
-                    .create_bins(step, slide)
+                    .create_bins(step)
                     .unwrap()
                     .into_iter()
                     .filter(|b| &b.chrom == chrom)

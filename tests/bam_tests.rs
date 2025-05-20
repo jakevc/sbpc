@@ -27,8 +27,18 @@ fn test_count_reads_in_bins_basic() -> Result<()> {
     let bam_path = "tests/data/test_sample.bam";
     let processor = BamProcessor::new(bam_path, None)?;
     let bins = vec![
-        GenomicRange { chrom: "chr1".to_string(), start: 0, end: 100, p_value: 1.0 },
-        GenomicRange { chrom: "chr1".to_string(), start: 100, end: 200, p_value: 1.0 },
+        GenomicRange {
+            chrom: "chr1".to_string(),
+            start: 0,
+            end: 100,
+            p_value: 1.0,
+        },
+        GenomicRange {
+            chrom: "chr1".to_string(),
+            start: 100,
+            end: 200,
+            p_value: 1.0,
+        },
     ];
     let counts = processor.count_reads_in_bins(&bins)?;
     assert_eq!(counts.len(), 2);

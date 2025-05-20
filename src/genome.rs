@@ -100,8 +100,7 @@ impl Genome {
         }
     }
 
-    pub fn create_bins(&self, step: u32, _slide: u32) -> Result<Vec<GenomicRange>> {
-        // Only use non-overlapping bins: slide = step
+    pub fn create_bins(&self, step: u32) -> Result<Vec<GenomicRange>> {
         info!("Creating non-overlapping genomic bins with step={}", step);
 
         let mut bins = Vec::new();

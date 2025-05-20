@@ -25,9 +25,6 @@ pub struct Cli {
     #[arg(short = 't', long, default_value_t = 100)]
     pub step: u32,
 
-    #[arg(short = 'l', long, default_value_t = 50)]
-    pub slide: u32,
-
     #[arg(short = 'w', long, default_value_t = 150)]
     pub minwidth: u32,
 
@@ -45,7 +42,6 @@ impl Cli {
     pub fn adjust_for_broad_peaks(&mut self) {
         if self.broad {
             self.step = 5000;
-            self.slide = 1000;
         }
     }
 }

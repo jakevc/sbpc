@@ -84,11 +84,10 @@ Options:
   -r, --minreads <MINREADS>    Test genome bins with at least <minreads> read pairs [default: 15]
   -p, --pval <PVAL>            Define significance threshold <pval> with multiple hypothesis correction via Benjamini-Hochberg [default: 0.05]
   -t, --step <STEP>            Bin size for coverage bins [default: 100]
-  -l, --slide <SLIDE>          Slide size for coverage bins [default: 50]
   -w, --minwidth <MINWIDTH>    Minimum width (bp) of a peak [default: 150]
   -o, --prefix <PREFIX>        Output prefix to write peaks and metrics file [default: sample]
   -v, --version                Print the current SBPC version
-      --broad                  Run SBPC on broad marks (--step 5000 & --slide 1000)
+      --broad                  Run SBPC on broad marks (--step 5000)
       --verbose                Run SBPC in verbose mode
   -h, --help                   Print help
 ```
