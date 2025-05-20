@@ -54,54 +54,83 @@ impl BamProcessor {
     }
 
     pub fn count_reads_in_bins(&self, bins: &[GenomicRange]) -> Result<Vec<(GenomicRange, usize)>> {
-        use rust_htslib::bam::IndexedReader;
         use rayon::prelude::*;
-        info!("Counting reads in {} bins using fast arithmetic bin assignment", bins.len());
+        use rust_htslib::bam::IndexedReader;
+        info!(
+            "Counting reads in {} bins using fast arithmetic bin assignment",
+            bins.len()
+        );
 
         // Group bins by chromosome and build bin lookup tables
         let mut chrom_bins: HashMap<String, Vec<(usize, &GenomicRange)>> = HashMap::new();
         for (i, bin) in bins.iter().enumerate() {
-            chrom_bins.entry(bin.chrom.clone()).or_default().push((i, bin));
+            chrom_bins
+                .entry(bin.chrom.clone())
+                .or_default()
+                .push((i, bin));
         }
 
-        // Prepare output vector
-        let mut bin_counts = vec![0; bins.len()];
-
-        // Parallelize by chromosome
-        chrom_bins.par_iter().for_each(|(chrom, bin_list)| {
-            let mut bam = IndexedReader::from_path(&self.bam_path).expect("Failed to open BAM file");
-            let header = bam.header().to_owned();
-            let tid = header.target_names().iter().position(|name| {
-                std::str::from_utf8(name).unwrap() == chrom
-            });
-            let tid = match tid {
-                Some(tid) => tid as u32,
-                None => return,
-            };
-            // Bins are non-overlapping and contiguous, so we can use arithmetic
-            let min_start = bin_list[0].1.start;
-            let bin_size = bin_list[0].1.end - bin_list[0].1.start;
-            let num_bins = bin_list.len();
-            if bam.fetch((tid, min_start, bin_list[num_bins-1].1.end)).is_err() {
-                return;
-            }
-            for rec in bam.records() {
-                let rec = match rec {
-                    Ok(r) => r,
-                    Err(_) => continue,
+        // Parallelize by chromosome, collect local results
+        let per_chrom_results: Vec<Vec<(usize, usize)>> = chrom_bins
+            .par_iter()
+            .map(|(chrom, bin_list)| {
+                let mut bam =
+                    IndexedReader::from_path(&self.bam_path).expect("Failed to open BAM file");
+                let header = bam.header().to_owned();
+                let tid = header
+                    .target_names()
+                    .iter()
+                    .position(|name| std::str::from_utf8(name).unwrap() == chrom);
+                let tid = match tid {
+                    Some(tid) => tid as u32,
+                    None => return Vec::new(),
                 };
-                if rec.is_unmapped() {
-                    continue;
+                let min_start = bin_list[0].1.start;
+                let bin_size = bin_list[0].1.end - bin_list[0].1.start;
+                let num_bins = bin_list.len();
+                let max_end = bin_list[num_bins - 1].1.end;
+                if bam.fetch((tid, min_start, max_end)).is_err() {
+                    return Vec::new();
                 }
-                let pos = rec.pos() as u32;
-                if pos < min_start { continue; }
-                let bin_idx = ((pos - min_start) / bin_size) as usize;
-                if bin_idx < num_bins {
-                    let (global_idx, _bin) = bin_list[bin_idx];
-                    bin_counts[global_idx] += 1;
+                let mut local_counts = vec![0usize; num_bins];
+                for rec in bam.records() {
+                    let rec = match rec {
+                        Ok(r) => r,
+                        Err(_) => continue,
+                    };
+                    if rec.is_unmapped() {
+                        continue;
+                    }
+                    let pos = rec.pos() as u32;
+                    if pos < min_start {
+                        continue;
+                    }
+                    let bin_idx = ((pos - min_start) / bin_size) as usize;
+                    if bin_idx < num_bins {
+                        local_counts[bin_idx] += 1;
+                    }
                 }
+                // Return (global_idx, count) for each bin in this chromosome
+                bin_list
+                    .iter()
+                    .enumerate()
+                    .map(|(i, (global_idx, _))| (*global_idx, local_counts[i]))
+                    .collect()
+            })
+            .collect();
+
+        // Merge local results into global bin_counts
+        let mut bin_counts = vec![0; bins.len()];
+        for chrom_result in per_chrom_results {
+            for (global_idx, count) in chrom_result {
+                bin_counts[global_idx] = count;
             }
-        });
+        }
+
+        // If control_path is set, normalize to control
+        if let (Some(control_path), Some(_)) = (&self.control_path, &self.control_reads) {
+            self.normalize_to_control(bins, &mut bin_counts, control_path)?;
+        }
 
         let result = bins
             .iter()
