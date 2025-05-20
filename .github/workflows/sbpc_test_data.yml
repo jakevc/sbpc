@@ -81,7 +81,7 @@ jobs:
           output_prefix=$(basename ${{ matrix.sample.name }} .bam)
           
           echo "Processing ${{ matrix.sample.name }} with control ${{ matrix.sample.control }}"
-          ./target/release/sbpc -b data/${{ matrix.sample.name }} -c data/${{ matrix.sample.control }} -o data/$output_prefix --verbose
+          ./target/release/sbpc -b data/${{ matrix.sample.name }} -c data/${{ matrix.sample.control }} -r 5 -o data/$output_prefix --verbose
           
           echo "Metrics for $output_prefix:"
           cat data/${output_prefix}_sbpc.json
@@ -116,10 +116,11 @@ jobs:
           echo "| Sample | Control | Peaks Found |" >> summary.md
           echo "| ------ | ------- | ----------- |" >> summary.md
           
-          for sample in K562_1_H3K4me1 K562_1_H3K4me2 K562_1_H3K4me3 K562_2_H3K4me1 K562_2_H3K4me2 K562_2_H3K4me3; do
+          for sample in K562_1_H3K4me1.sort.bam K562_1_H3K4me2.sort.bam K562_1_H3K4me3.sort.bam K562_2_H3K4me1.sort.bam K562_2_H3K4me2.sort.bam K562_2_H3K4me3.sort.bam; do
+            sample_base=$(basename $sample .sort.bam)
             control=$(echo $sample | sed 's/H3K4me[123]/IgG/')
-            peaks=$(cat all-metrics/metrics-${sample}.sort.bam/${sample}_peak_count.txt)
-            echo "| $sample | $control | $peaks |" >> summary.md
+            peaks=$(cat all-metrics/metrics-${sample}/${sample_base}_peak_count.txt)
+            echo "| $sample_base | $control | $peaks |" >> summary.md
           done
           
           cat summary.md

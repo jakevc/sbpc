@@ -2,4 +2,6 @@
 *.bam*
 *.bed
 *.json
+testdata
+.DS_Store
 
