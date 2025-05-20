@@ -54,64 +54,62 @@ impl BamProcessor {
     }
 
     pub fn count_reads_in_bins(&self, bins: &[GenomicRange]) -> Result<Vec<(GenomicRange, usize)>> {
-        info!("Counting reads in {} bins", bins.len());
+        use rust_htslib::bam::IndexedReader;
+        use rayon::prelude::*;
+        info!("Counting reads in {} bins using fast arithmetic bin assignment", bins.len());
 
+        // Group bins by chromosome and build bin lookup tables
         let mut chrom_bins: HashMap<String, Vec<(usize, &GenomicRange)>> = HashMap::new();
         for (i, bin) in bins.iter().enumerate() {
-            chrom_bins
-                .entry(bin.chrom.clone())
-                .or_default()
-                .push((i, bin));
+            chrom_bins.entry(bin.chrom.clone()).or_default().push((i, bin));
         }
 
+        // Prepare output vector
         let mut bin_counts = vec![0; bins.len()];
 
-        let mut bam = bam::Reader::from_path(&self.bam_path)
-            .context(format!("Failed to open BAM file: {}", self.bam_path))?;
-
-        let target_names: Vec<Vec<u8>> = bam
-            .header()
-            .target_names()
-            .iter()
-            .map(|&name| name.to_vec())
-            .collect();
-
-        for record in bam.records() {
-            let rec = record?;
-
-            if rec.is_unmapped() {
-                continue;
-            }
-
-            let tid = rec.tid();
-            let chrom = if tid >= 0 && (tid as usize) < target_names.len() {
-                std::str::from_utf8(&target_names[tid as usize])?.to_string()
-            } else {
-                continue;
+        // Parallelize by chromosome
+        chrom_bins.par_iter().for_each(|(chrom, bin_list)| {
+            let mut bam = IndexedReader::from_path(&self.bam_path).expect("Failed to open BAM file");
+            let header = bam.header().to_owned();
+            let tid = header.target_names().iter().position(|name| {
+                std::str::from_utf8(name).unwrap() == chrom
+            });
+            let tid = match tid {
+                Some(tid) => tid as u32,
+                None => return,
             };
-
-            let pos = rec.pos() as u32;
-
-            if let Some(chrom_bin_list) = chrom_bins.get(&chrom) {
-                for (bin_idx, bin) in chrom_bin_list {
-                    if pos >= bin.start && pos < bin.end {
-                        bin_counts[*bin_idx] += 1;
-                    }
+            // Bins are non-overlapping and contiguous, so we can use arithmetic
+            let min_start = bin_list[0].1.start;
+            let bin_size = bin_list[0].1.end - bin_list[0].1.start;
+            let num_bins = bin_list.len();
+            if bam.fetch((tid, min_start, bin_list[num_bins-1].1.end)).is_err() {
+                return;
+            }
+            for rec in bam.records() {
+                let rec = match rec {
+                    Ok(r) => r,
+                    Err(_) => continue,
+                };
+                if rec.is_unmapped() {
+                    continue;
+                }
+                let pos = rec.pos() as u32;
+                if pos < min_start { continue; }
+                let bin_idx = ((pos - min_start) / bin_size) as usize;
+                if bin_idx < num_bins {
+                    let (global_idx, _bin) = bin_list[bin_idx];
+                    bin_counts[global_idx] += 1;
                 }
             }
-        }
-
-        if let Some(control_path) = &self.control_path {
-            self.normalize_to_control(bins, &mut bin_counts, control_path)?;
-        }
+        });
 
         let result = bins
             .iter()
-            .zip(bin_counts.iter())
-            .map(|(bin, &count)| {
-                let mut bin_clone = bin.clone();
-                bin_clone.p_value = 1.0; // Initialize p-value to 1.0, will be calculated by Bayesian model
-                (bin_clone, count)
+            .cloned()
+            .zip(bin_counts.iter().cloned())
+            .map(|(mut bin, count)| {
+                bin.p_value = 1.0;
+                (bin, count)
             })
             .collect();
 
