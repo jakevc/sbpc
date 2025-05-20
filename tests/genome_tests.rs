@@ -13,21 +13,23 @@ fn test_create_bins() -> Result<()> {
     let step = 100;
     let slide = 50;
 
+    // With non-overlapping bins, slide is ignored and only step is used
     let bins = genome.create_bins(step, slide)?;
 
-    assert_eq!(bins.len(), 28, "Expected 28 bins");
+    // chr1: 1000/100 = 10 bins, chr2: 500/100 = 5 bins, total = 15
+    assert_eq!(bins.len(), 15, "Expected 15 bins for non-overlapping bins");
 
     assert_eq!(bins[0].chrom, "chr1");
     assert_eq!(bins[0].start, 0);
     assert_eq!(bins[0].end, 100);
 
-    assert_eq!(bins[18].chrom, "chr1");
-    assert_eq!(bins[18].start, 900);
-    assert_eq!(bins[18].end, 1000);
+    assert_eq!(bins[9].chrom, "chr1");
+    assert_eq!(bins[9].start, 900);
+    assert_eq!(bins[9].end, 1000);
 
-    assert_eq!(bins[19].chrom, "chr2");
-    assert_eq!(bins[19].start, 0);
-    assert_eq!(bins[19].end, 100);
+    assert_eq!(bins[10].chrom, "chr2");
+    assert_eq!(bins[10].start, 0);
+    assert_eq!(bins[10].end, 100);
 
     Ok(())
 }

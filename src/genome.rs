@@ -100,8 +100,9 @@ impl Genome {
         }
     }
 
-    pub fn create_bins(&self, step: u32, slide: u32) -> Result<Vec<GenomicRange>> {
-        info!("Creating genomic bins with step={}, slide={}", step, slide);
+    pub fn create_bins(&self, step: u32, _slide: u32) -> Result<Vec<GenomicRange>> {
+        // Only use non-overlapping bins: slide = step
+        info!("Creating non-overlapping genomic bins with step={}", step);
 
         let mut bins = Vec::new();
 
@@ -109,22 +110,19 @@ impl Genome {
             let length = self.lengths[i];
             let mut start = 0;
 
-            while start <= length - step {
+            while start + step <= length {
                 let end = start + step;
-
                 bins.push(GenomicRange {
                     chrom: chrom.clone(),
                     start,
                     end,
                     p_value: 1.0, // Initialize p-value to 1.0
                 });
-
-                start += slide;
+                start += step;
             }
         }
 
-        info!("Created {} genomic bins", bins.len());
-
+        info!("Created {} non-overlapping genomic bins", bins.len());
         Ok(bins)
     }
 }
