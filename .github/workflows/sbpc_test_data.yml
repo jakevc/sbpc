@@ -118,7 +118,7 @@ jobs:
           
           for sample in K562_1_H3K4me1 K562_1_H3K4me2 K562_1_H3K4me3 K562_2_H3K4me1 K562_2_H3K4me2 K562_2_H3K4me3; do
             control=$(echo $sample | sed 's/H3K4me[123]/IgG/')
-            peaks=$(cat all-metrics/metrics-${sample}.bam/${sample}_peak_count.txt)
+            peaks=$(cat all-metrics/metrics-${sample}.sort.bam/${sample}_peak_count.txt)
             echo "| $sample | $control | $peaks |" >> summary.md
           done
           
