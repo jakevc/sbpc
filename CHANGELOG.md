@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-05-21
+### Changed
+- **BREAKING**: Removed `-o/--prefix` option; peaks are now printed to stdout
+- **BREAKING**: Changed default step size from 100 to 200
+- Added `--metrics-file` flag to optionally write metrics to a file
+- Metrics are now printed as JSON to stdout by default
+- Simplified BayesianModel constructor by removing the step parameter
+- Improved code organization and removed unused code
+- Removed utils.rs module
+- Updated documentation to reflect new command-line usage
+
+## [0.1.3] - 2025-05-19
+### Changed
+- Updated installation instructions in README
+
 ## [0.1.1] - 2025-05-13
 ### Changed
 - Updated release workflow to only trigger on semver tags pushed to main branch
