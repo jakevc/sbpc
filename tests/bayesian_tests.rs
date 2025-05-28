@@ -4,7 +4,7 @@ use sbpc::bayesian::BayesianModel;
 
 #[test]
 fn test_identify_significant_bins() -> Result<()> {
-    let model = BayesianModel::new(0.05, 5);
+    let mut model = BayesianModel::new(0.05, 5);
 
     let bins = vec![
         (
@@ -60,7 +60,7 @@ fn test_identify_significant_bins() -> Result<()> {
 
 #[test]
 fn test_bayesian_posterior_probability_calculation() -> Result<()> {
-    let model = BayesianModel::new(0.05, 5);
+    let mut model = BayesianModel::new(0.05, 5);
 
     let bins = vec![
         (

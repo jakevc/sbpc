@@ -4,7 +4,7 @@ use sbpc::bayesian::BayesianModel;
 
 #[test]
 fn test_bayesian_model_min_reads_filter() -> Result<()> {
-    let model = BayesianModel::new(0.05, 10);
+    let mut model = BayesianModel::new(0.05, 10);
     let bins = vec![
         (
             GenomicRange {
@@ -33,7 +33,7 @@ fn test_bayesian_model_min_reads_filter() -> Result<()> {
 
 #[test]
 fn test_bayesian_model_posterior_prob_range() -> Result<()> {
-    let model = BayesianModel::new(0.05, 1);
+    let mut model = BayesianModel::new(0.05, 1);
     let bins = vec![
         (
             GenomicRange {
