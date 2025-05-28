@@ -1,6 +1,6 @@
 # SBPC - Simple Bayesian Peak Caller
 
-SBPC is a peak caller for genomic data that implements a Bayesian statistical framework to evaluate the probabilities of regions being peaks. It is designed for CUT&TAG/CUT&RUN sequencing data and provides p-values for each detected peak region.
+SBPC is a peak caller for genomic data that implements a Bayesian statistical framework to evaluate the probabilities of regions being peaks. It is designed for CUT&TAG/CUT&RUN sequencing data and provides posterior probabilities for each detected peak region.
 
 ## Usage
 
@@ -85,7 +85,7 @@ Options:
   -s, --chromsize <CHROMSIZE>  Chromosome sizes for the genome if not found in the bam header
   -m, --mdist <MDIST>          Merge peaks within <mdist> base pairs [default: 1000]
   -r, --minreads <MINREADS>    Test genome bins with at least <minreads> read pairs [default: 15]
-  -p, --pval <PVAL>            Define significance threshold <pval> with multiple hypothesis correction via Benjamini-Hochberg [default: 0.05]
+  -p, --posterior-threshold <THRESHOLD>  Define posterior probability threshold for peak significance [default: 0.95]
   -t, --step <STEP>            Bin size for coverage bins [default: 200]
   -w, --minwidth <MINWIDTH>    Minimum width (bp) of a peak [default: 150]
   -v, --version                Print the current SBPC version

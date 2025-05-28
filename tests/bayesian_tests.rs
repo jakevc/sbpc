@@ -4,7 +4,7 @@ use sbpc::bayesian::BayesianModel;
 
 #[test]
 fn test_identify_significant_bins() -> Result<()> {
-    let model = BayesianModel::new(0.05, 5);
+    let mut model = BayesianModel::new(0.05, 5);
 
     let bins = vec![
         (
@@ -12,7 +12,7 @@ fn test_identify_significant_bins() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 0,
                 end: 100,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             20, // High count, should be significant
         ),
@@ -21,7 +21,7 @@ fn test_identify_significant_bins() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 100,
                 end: 200,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             2, // Low count, should not be significant
         ),
@@ -30,7 +30,7 @@ fn test_identify_significant_bins() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 200,
                 end: 300,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             15, // Medium count, might be significant
         ),
@@ -59,8 +59,8 @@ fn test_identify_significant_bins() -> Result<()> {
 }
 
 #[test]
-fn test_bayesian_p_value_calculation() -> Result<()> {
-    let model = BayesianModel::new(0.05, 5);
+fn test_bayesian_posterior_probability_calculation() -> Result<()> {
+    let mut model = BayesianModel::new(0.05, 5);
 
     let bins = vec![
         (
@@ -68,7 +68,7 @@ fn test_bayesian_p_value_calculation() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 0,
                 end: 100,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             50, // Very high count
         ),
@@ -77,7 +77,7 @@ fn test_bayesian_p_value_calculation() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 100,
                 end: 200,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             25, // High count
         ),
@@ -86,7 +86,7 @@ fn test_bayesian_p_value_calculation() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 200,
                 end: 300,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             10, // Medium count
         ),
@@ -95,7 +95,7 @@ fn test_bayesian_p_value_calculation() -> Result<()> {
                 chrom: "chr1".to_string(),
                 start: 300,
                 end: 400,
-                p_value: 1.0,
+                posterior_prob: 1.0,
             },
             5, // Low count
         ),
@@ -107,9 +107,9 @@ fn test_bayesian_p_value_calculation() -> Result<()> {
 
     for bin in &significant_bins {
         assert!(
-            bin.p_value >= 0.0 && bin.p_value <= 1.0,
-            "P-value should be in range [0, 1], got: {}",
-            bin.p_value
+            bin.posterior_prob >= 0.0 && bin.posterior_prob <= 1.0,
+            "Posterior probability should be in range [0, 1], got: {}",
+            bin.posterior_prob
         );
     }
 
@@ -135,8 +135,8 @@ fn test_bayesian_p_value_calculation() -> Result<()> {
 
             if prev_count > curr_count {
                 assert!(
-                    prev_bin.p_value <= curr_bin.p_value,
-                    "Bin with higher count should have lower p-value"
+                    prev_bin.posterior_prob >= curr_bin.posterior_prob,
+                    "Bin with higher count should have higher posterior probability"
                 );
             }
         }

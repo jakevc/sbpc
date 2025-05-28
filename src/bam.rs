@@ -8,7 +8,7 @@ pub struct GenomicRange {
     pub chrom: String,
     pub start: u32,
     pub end: u32,
-    pub p_value: f64,
+    pub posterior_prob: f64,
 }
 
 pub struct BamProcessor {
@@ -137,7 +137,7 @@ impl BamProcessor {
             .cloned()
             .zip(bin_counts.iter().cloned())
             .map(|(mut bin, count)| {
-                bin.p_value = 1.0;
+                bin.posterior_prob = 1.0;
                 (bin, count)
             })
             .collect();

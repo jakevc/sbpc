@@ -3,6 +3,7 @@ use crate::bayesian::BayesianModel;
 use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::Result;
+use bio::stats::{LogProb, Prob};
 use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -27,7 +28,7 @@ impl PeakCaller {
 
         let bam_processor = BamProcessor::new(&cli.bam, cli.control.as_deref())?;
 
-        let bayesian_model = BayesianModel::new(cli.pval, cli.minreads);
+        let bayesian_model = BayesianModel::new(cli.posterior_threshold, cli.minreads);
 
         Ok(Self {
             cli: cli_copy,
@@ -45,9 +46,14 @@ impl PeakCaller {
         let step = self.cli.step;
         let mdist = self.cli.mdist;
         let minwidth = self.cli.minwidth;
-        let bayesian_model = &self.bayesian_model;
         let bam_processor = &self.bam_processor;
         let total_reads = bam_processor.total_reads();
+
+        // Create a thread-local clone of the bayesian model for parallel processing
+        let model_params = (
+            self.bayesian_model.significance_threshold(),
+            self.bayesian_model.min_reads(),
+        );
 
         let all_peaks: Vec<GenomicRange> = chroms
             .par_iter()
@@ -60,17 +66,25 @@ impl PeakCaller {
                     .into_iter()
                     .filter(|b| &b.chrom == chrom)
                     .collect();
+
                 if bins.is_empty() {
                     return Vec::new();
                 }
+
                 // Count reads in bins for this chromosome
                 let bin_counts = bam_processor.count_reads_in_bins(&bins).unwrap();
-                // Identify significant bins
-                let significant_bins = bayesian_model
+
+                // Create a thread-local model instance
+                let mut thread_local_model = BayesianModel::new(model_params.0, model_params.1);
+
+                // Identify significant bins using the thread-local model
+                let significant_bins = thread_local_model
                     .identify_significant_bins(&bin_counts, total_reads)
                     .unwrap();
+
                 // Merge bins into peaks for this chromosome
                 let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
+
                 // Filter peaks by width and return directly
                 self.filter_peaks_by_width(merged_peaks, minwidth).unwrap()
             })
@@ -108,7 +122,10 @@ impl PeakCaller {
                 for bin in sorted_bins.iter().skip(1) {
                     if bin.start <= current_peak.end + max_distance {
                         current_peak.end = bin.end.max(current_peak.end);
-                        current_peak.p_value *= bin.p_value;
+
+                        let current_log = LogProb::from(Prob(current_peak.posterior_prob));
+                        let bin_log = LogProb::from(Prob(bin.posterior_prob));
+                        current_peak.posterior_prob = *Prob::from(current_log + bin_log);
                     } else {
                         result.push(current_peak.clone());
                         current_peak = bin.clone();
@@ -149,8 +166,8 @@ impl Peaks {
         for range in &self.ranges {
             writeln!(
                 handle,
-                "{}\t{}\t{}\tpeak\t{:.6e}\t.",
-                range.chrom, range.start, range.end, range.p_value
+                "{}\t{}\t{}\tpeak\t{:.6}\t.",
+                range.chrom, range.start, range.end, range.posterior_prob
             )
             .unwrap();
         }
