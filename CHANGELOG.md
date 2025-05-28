@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-05-28
+### Changed
+- **BREAKING**: Replaced p-values with posterior probabilities in the Bayesian model
+- Added rust-bio crate dependency for Bayesian statistical modeling
+- Changed CLI parameter from `--pval` to `--posterior-threshold` with default of 0.95
+- Updated peak merging logic to multiply posterior probabilities for uncertainty-aware detection
+- Modified BED output format to display posterior probabilities
+- Enabled local FDR filtering with direct posterior probability thresholds
+- Added support for comparing experiments by multiplying posteriors across samples
+
 ## [0.2.0] - 2025-05-21
 ### Changed
 - **BREAKING**: Removed `-o/--prefix` option; peaks are now printed to stdout
