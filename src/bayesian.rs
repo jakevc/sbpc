@@ -40,15 +40,14 @@ impl BayesianModel {
             let posterior_alpha = alpha + *count as f64;
             let posterior_beta = beta + (total_reads - *count) as f64;
 
-            let posterior_prob = self.calculate_posterior_probability(
-                posterior_alpha,
-                posterior_beta,
-            )?;
+            let posterior_prob =
+                self.calculate_posterior_probability(posterior_alpha, posterior_beta)?;
 
             posterior_probs.push((bin.clone(), posterior_prob));
         }
 
-        let significant = self.apply_posterior_threshold(posterior_probs, self.significance_threshold)?;
+        let significant =
+            self.apply_posterior_threshold(posterior_probs, self.significance_threshold)?;
 
         for (bin, _) in significant {
             significant_bins.push(bin);

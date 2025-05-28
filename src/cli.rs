@@ -19,7 +19,12 @@ pub struct Cli {
     #[arg(short = 'r', long, default_value_t = 15)]
     pub minreads: u32,
 
-    #[arg(short = 'p', long, default_value_t = 0.95, help = "Posterior probability threshold")]
+    #[arg(
+        short = 'p',
+        long,
+        default_value_t = 0.95,
+        help = "Posterior probability threshold"
+    )]
     pub posterior_threshold: f64,
 
     #[arg(short = 't', long, default_value_t = 200)]
