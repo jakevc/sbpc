@@ -46,36 +46,41 @@ impl PeakCaller {
         let step = self.cli.step;
         let mdist = self.cli.mdist;
         let minwidth = self.cli.minwidth;
-        let bayesian_model = &self.bayesian_model;
         let bam_processor = &self.bam_processor;
         let total_reads = bam_processor.total_reads();
 
-        let all_peaks: Vec<GenomicRange> = chroms
-            .par_iter()
-            .flat_map(|chrom| {
-                // Create bins for this chromosome only
-                let bins: Vec<GenomicRange> = self
-                    .genome
-                    .create_bins(step)
-                    .unwrap()
-                    .into_iter()
-                    .filter(|b| &b.chrom == chrom)
-                    .collect();
-                if bins.is_empty() {
-                    return Vec::new();
-                }
-                // Count reads in bins for this chromosome
-                let bin_counts = bam_processor.count_reads_in_bins(&bins).unwrap();
-                // Identify significant bins
-                let significant_bins = bayesian_model
-                    .identify_significant_bins(&bin_counts, total_reads)
-                    .unwrap();
-                // Merge bins into peaks for this chromosome
-                let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
-                // Filter peaks by width and return directly
-                self.filter_peaks_by_width(merged_peaks, minwidth).unwrap()
-            })
-            .collect();
+        let mut all_peaks = Vec::new();
+
+        for chrom in &chroms {
+            // Create bins for this chromosome only
+            let bins: Vec<GenomicRange> = self
+                .genome
+                .create_bins(step)
+                .unwrap()
+                .into_iter()
+                .filter(|b| &b.chrom == chrom)
+                .collect();
+
+            if bins.is_empty() {
+                continue;
+            }
+
+            // Count reads in bins for this chromosome
+            let bin_counts = bam_processor.count_reads_in_bins(&bins).unwrap();
+
+            // Identify significant bins (requires mutable borrow)
+            let significant_bins = self
+                .bayesian_model
+                .identify_significant_bins(&bin_counts, total_reads)
+                .unwrap();
+
+            // Merge bins into peaks for this chromosome
+            let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
+
+            // Filter peaks by width and add to results
+            let chromosome_peaks = self.filter_peaks_by_width(merged_peaks, minwidth).unwrap();
+            all_peaks.extend(chromosome_peaks);
+        }
 
         info!("Peak calling completed, found {} peaks", all_peaks.len());
 
