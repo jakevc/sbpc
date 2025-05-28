@@ -15,6 +15,7 @@ rust-htslib = "0.44.1"
 clap = { version = "4.4.11", features = ["derive"] }
 # Statistical analysis
 statrs = "0.16.0"
+bio = "2.3.0"
 # Parallel processing
 rayon = "1.8.0"
 # Error handling

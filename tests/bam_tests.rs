@@ -31,13 +31,13 @@ fn test_count_reads_in_bins_basic() -> Result<()> {
             chrom: "chr1".to_string(),
             start: 0,
             end: 100,
-            p_value: 1.0,
+            posterior_prob: 1.0,
         },
         GenomicRange {
             chrom: "chr1".to_string(),
             start: 100,
             end: 200,
-            p_value: 1.0,
+            posterior_prob: 1.0,
         },
     ];
     let counts = processor.count_reads_in_bins(&bins)?;

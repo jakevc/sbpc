@@ -27,7 +27,7 @@ impl PeakCaller {
 
         let bam_processor = BamProcessor::new(&cli.bam, cli.control.as_deref())?;
 
-        let bayesian_model = BayesianModel::new(cli.pval, cli.minreads);
+        let bayesian_model = BayesianModel::new(cli.posterior_threshold, cli.minreads);
 
         Ok(Self {
             cli: cli_copy,
@@ -108,7 +108,7 @@ impl PeakCaller {
                 for bin in sorted_bins.iter().skip(1) {
                     if bin.start <= current_peak.end + max_distance {
                         current_peak.end = bin.end.max(current_peak.end);
-                        current_peak.p_value *= bin.p_value;
+                        current_peak.posterior_prob *= bin.posterior_prob;
                     } else {
                         result.push(current_peak.clone());
                         current_peak = bin.clone();
@@ -149,8 +149,8 @@ impl Peaks {
         for range in &self.ranges {
             writeln!(
                 handle,
-                "{}\t{}\t{}\tpeak\t{:.6e}\t.",
-                range.chrom, range.start, range.end, range.p_value
+                "{}\t{}\t{}\tpeak\t{:.6}\t.",
+                range.chrom, range.start, range.end, range.posterior_prob
             )
             .unwrap();
         }

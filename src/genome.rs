@@ -115,7 +115,7 @@ impl Genome {
                     chrom: chrom.clone(),
                     start,
                     end,
-                    p_value: 1.0, // Initialize p-value to 1.0
+                    posterior_prob: 1.0, // Initialize posterior probability to 1.0
                 });
                 start += step;
             }
