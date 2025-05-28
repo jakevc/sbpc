@@ -1,4 +1,5 @@
 use anyhow::Result;
+use bio::stats::{LogProb, Prob};
 use log::{debug, info};
 use statrs::distribution::Beta;
 use statrs::statistics::{Distribution, Statistics};
@@ -23,12 +24,12 @@ impl BayesianModel {
         bin_counts: &[(GenomicRange, usize)],
         total_reads: usize,
     ) -> Result<Vec<GenomicRange>> {
-        info!("Applying Bayesian model to identify significant bins");
+        info!("Applying Bayesian model to identify significant bins using log-space probabilities");
 
         let (alpha, beta) = self.calculate_prior_parameters(bin_counts, total_reads);
 
         debug!("Prior parameters: alpha={}, beta={}", alpha, beta);
-
+        
         let mut significant_bins = Vec::new();
         let mut posterior_probs = Vec::new();
 
@@ -40,8 +41,10 @@ impl BayesianModel {
             let posterior_alpha = alpha + *count as f64;
             let posterior_beta = beta + (total_reads - *count) as f64;
 
-            let posterior_prob =
-                self.calculate_posterior_probability(posterior_alpha, posterior_beta)?;
+            let posterior_prob = self.calculate_posterior_probability(
+                posterior_alpha,
+                posterior_beta,
+            )?;
 
             posterior_probs.push((bin.clone(), posterior_prob));
         }
@@ -97,8 +100,12 @@ impl BayesianModel {
         posterior_beta: f64,
     ) -> Result<f64> {
         let posterior_distribution = Beta::new(posterior_alpha, posterior_beta)?;
-        let posterior_prob = posterior_distribution.mean().unwrap_or(0.5);
-        Ok(posterior_prob.clamp(0.0, 1.0))
+        
+        let signal_prob = posterior_distribution.mean().unwrap_or(0.5);
+        
+        let log_prob = LogProb::from(Prob(signal_prob));
+        
+        Ok((*Prob::from(log_prob)).clamp(0.0, 1.0))
     }
 
     fn apply_posterior_threshold(

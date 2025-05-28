@@ -3,6 +3,7 @@ use crate::bayesian::BayesianModel;
 use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::Result;
+use bio::stats::{LogProb, Prob};
 use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -108,7 +109,10 @@ impl PeakCaller {
                 for bin in sorted_bins.iter().skip(1) {
                     if bin.start <= current_peak.end + max_distance {
                         current_peak.end = bin.end.max(current_peak.end);
-                        current_peak.posterior_prob *= bin.posterior_prob;
+                        
+                        let current_log = LogProb::from(Prob(current_peak.posterior_prob));
+                        let bin_log = LogProb::from(Prob(bin.posterior_prob));
+                        current_peak.posterior_prob = *Prob::from(current_log + bin_log);
                     } else {
                         result.push(current_peak.clone());
                         current_peak = bin.clone();
