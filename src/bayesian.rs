@@ -136,6 +136,14 @@ impl BayesianModel {
         }
     }
 
+    pub fn significance_threshold(&self) -> f64 {
+        self.significance_threshold
+    }
+
+    pub fn min_reads(&self) -> u32 {
+        self.min_reads
+    }
+
     pub fn identify_significant_bins(
         &mut self, // Note: needs to be mutable to update the model
         bin_counts: &[(GenomicRange, usize)],

@@ -49,38 +49,46 @@ impl PeakCaller {
         let bam_processor = &self.bam_processor;
         let total_reads = bam_processor.total_reads();
 
-        let mut all_peaks = Vec::new();
+        // Create a thread-local clone of the bayesian model for parallel processing
+        let model_params = (
+            self.bayesian_model.significance_threshold(),
+            self.bayesian_model.min_reads(),
+        );
 
-        for chrom in &chroms {
-            // Create bins for this chromosome only
-            let bins: Vec<GenomicRange> = self
-                .genome
-                .create_bins(step)
-                .unwrap()
-                .into_iter()
-                .filter(|b| &b.chrom == chrom)
-                .collect();
+        let all_peaks: Vec<GenomicRange> = chroms
+            .par_iter()
+            .flat_map(|chrom| {
+                // Create bins for this chromosome only
+                let bins: Vec<GenomicRange> = self
+                    .genome
+                    .create_bins(step)
+                    .unwrap()
+                    .into_iter()
+                    .filter(|b| &b.chrom == chrom)
+                    .collect();
 
-            if bins.is_empty() {
-                continue;
-            }
+                if bins.is_empty() {
+                    return Vec::new();
+                }
 
-            // Count reads in bins for this chromosome
-            let bin_counts = bam_processor.count_reads_in_bins(&bins).unwrap();
+                // Count reads in bins for this chromosome
+                let bin_counts = bam_processor.count_reads_in_bins(&bins).unwrap();
 
-            // Identify significant bins (requires mutable borrow)
-            let significant_bins = self
-                .bayesian_model
-                .identify_significant_bins(&bin_counts, total_reads)
-                .unwrap();
+                // Create a thread-local model instance
+                let mut thread_local_model = BayesianModel::new(model_params.0, model_params.1);
 
-            // Merge bins into peaks for this chromosome
-            let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
+                // Identify significant bins using the thread-local model
+                let significant_bins = thread_local_model
+                    .identify_significant_bins(&bin_counts, total_reads)
+                    .unwrap();
 
-            // Filter peaks by width and add to results
-            let chromosome_peaks = self.filter_peaks_by_width(merged_peaks, minwidth).unwrap();
-            all_peaks.extend(chromosome_peaks);
-        }
+                // Merge bins into peaks for this chromosome
+                let merged_peaks = self.merge_bins_into_peaks(significant_bins, mdist).unwrap();
+
+                // Filter peaks by width and return directly
+                self.filter_peaks_by_width(merged_peaks, minwidth).unwrap()
+            })
+            .collect();
 
         info!("Peak calling completed, found {} peaks", all_peaks.len());
 
