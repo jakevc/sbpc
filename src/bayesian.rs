@@ -1,8 +1,7 @@
 use anyhow::Result;
 use bio::stats::{LogProb, Prob};
 use log::{debug, info};
-use statrs::distribution::Beta;
-use statrs::statistics::{Distribution, Statistics};
+use statrs::statistics::Statistics;
 
 use crate::bam::GenomicRange;
 
@@ -41,8 +40,12 @@ impl BayesianModel {
             let posterior_alpha = alpha + *count as f64;
             let posterior_beta = beta + (total_reads - *count) as f64;
 
-            let posterior_prob =
-                self.calculate_posterior_probability(posterior_alpha, posterior_beta)?;
+            let posterior_prob = self.calculate_posterior_probability(
+                posterior_alpha,
+                posterior_beta,
+                *count as f64,
+                total_reads as f64,
+            )?;
 
             posterior_probs.push((bin.clone(), posterior_prob));
         }
@@ -94,16 +97,27 @@ impl BayesianModel {
 
     fn calculate_posterior_probability(
         &self,
-        posterior_alpha: f64,
-        posterior_beta: f64,
+        _posterior_alpha: f64,
+        _posterior_beta: f64,
+        observed_count: f64,
+        total_reads: f64,
     ) -> Result<f64> {
-        let posterior_distribution = Beta::new(posterior_alpha, posterior_beta)?;
+        let prior_signal = 0.01; // P(signal): Prior probability of true signal
+        let observed_proportion = observed_count / total_reads;
 
-        let signal_prob = posterior_distribution.mean().unwrap_or(0.5);
+        let likelihood_given_signal = observed_proportion.max(0.5);
+        let likelihood_given_noise = (1.0 - observed_proportion).max(0.1);
 
-        let log_prob = LogProb::from(Prob(signal_prob));
+        let p_signal = LogProb::from(Prob(prior_signal));
+        let p_noise = LogProb::from(Prob(1.0 - prior_signal));
+        let p_data_given_signal = LogProb::from(Prob(likelihood_given_signal));
+        let p_data_given_noise = LogProb::from(Prob(likelihood_given_noise));
 
-        Ok((*Prob::from(log_prob)).clamp(0.0, 1.0))
+        let p_data = (p_data_given_signal + p_signal).ln_add_exp(p_data_given_noise + p_noise);
+
+        let posterior = p_data_given_signal + p_signal - p_data;
+
+        Ok((*Prob::from(posterior)).clamp(0.0, 1.0))
     }
 
     fn apply_posterior_threshold(
