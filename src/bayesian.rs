@@ -21,8 +21,8 @@ pub struct ReadCountData {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct GenomicPrior {
-    pub r: f64,      // number of successes parameter
-    pub p: f64,      // success probability parameter
+    pub r: f64, // number of successes parameter
+    pub p: f64, // success probability parameter
 }
 
 impl Prior for GenomicPrior {
@@ -48,28 +48,22 @@ impl GenomicPrior {
             .collect();
 
         if non_zero_counts.is_empty() {
-            return Self {
-                r: 1.0,
-                p: 0.5,
-            };
+            return Self { r: 1.0, p: 0.5 };
         }
 
         let mean = non_zero_counts.clone().mean();
         let variance = non_zero_counts.variance();
 
         if variance <= mean || variance == 0.0 || mean == 0.0 {
-            return Self {
-                r: 1.0,
-                p: 0.5,
-            };
+            return Self { r: 1.0, p: 0.5 };
         }
 
         let r = (mean * mean) / (variance - mean);
         let p = mean / variance;
 
         Self {
-            r: r.max(0.01),  // Ensure r > 0
-            p: p.clamp(0.01, 0.99),  // Ensure 0 < p < 1
+            r: r.max(0.01),         // Ensure r > 0
+            p: p.clamp(0.01, 0.99), // Ensure 0 < p < 1
         }
     }
 }
@@ -89,9 +83,7 @@ impl Likelihood for GenomicLikelihood {
                 let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
                 LogProb::from(log_likelihood)
             }
-            Err(_) => {
-                LogProb::ln_zero()
-            }
+            Err(_) => LogProb::ln_zero(),
         }
     }
 }
@@ -133,14 +125,8 @@ pub struct BayesianModel {
 
 impl BayesianModel {
     pub fn new(significance_threshold: f64, min_reads: u32) -> Self {
-        let likelihood = GenomicLikelihood {
-            r: 1.0,
-            p: 0.5,
-        };
-        let prior = GenomicPrior {
-            r: 1.0,
-            p: 0.5,
-        };
+        let likelihood = GenomicLikelihood { r: 1.0, p: 0.5 };
+        let prior = GenomicPrior { r: 1.0, p: 0.5 };
         let posterior = GenomicPosterior;
         let model = Model::new(likelihood, prior, posterior);
 
@@ -168,7 +154,7 @@ impl BayesianModel {
 
         let prior = GenomicPrior::from_bin_counts(bin_counts);
         *self.model.prior_mut() = prior.clone();
-        
+
         self.model.likelihood_mut().r = prior.r;
         self.model.likelihood_mut().p = prior.p;
 
