@@ -45,12 +45,12 @@ impl GenomicPrior {
         let mean = counts.clone().mean();
         let variance = counts.clone().variance();
 
-        info!(
-            "Count statistics: mean={}, variance={}, n={}",
-            mean,
-            variance,
-            counts.len()
-        );
+        // info!(
+        //     "Count statistics: mean={}, variance={}, n={}",
+        //     mean,
+        //     variance,
+        //     counts.len()
+        // );
 
         if variance > mean && variance.is_finite() && mean > 0.0 {
             let r = (mean * mean) / (variance - mean);
@@ -60,10 +60,10 @@ impl GenomicPrior {
                 let final_r = r.clamp(1.0, 50.0); // Tighter bounds: min 1.0, max 50.0
                 let final_p = p.clamp(0.1, 0.8); // Tighter bounds: min 0.1, max 0.8
 
-                info!(
-                    "Method-of-moments estimation: raw r={}, p={}, clamped r={}, p={}",
-                    r, p, final_r, final_p
-                );
+                // info!(
+                //     "Method-of-moments estimation: raw r={}, p={}, clamped r={}, p={}",
+                //     r, p, final_r, final_p
+                // );
 
                 return Self {
                     r: final_r,
@@ -89,17 +89,17 @@ impl Likelihood for GenomicLikelihood {
         match NegativeBinomial::new(self.r, self.p) {
             Ok(nb_dist) => {
                 let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
-                info!(
-                    "NB likelihood: count={}, r={}, p={}, ln_pmf={}",
-                    data.observed_count, self.r, self.p, log_likelihood
-                );
+                // info!(
+                //     "NB likelihood: count={}, r={}, p={}, ln_pmf={}",
+                //     data.observed_count, self.r, self.p, log_likelihood
+                // );
                 LogProb::from(log_likelihood)
             }
             Err(e) => {
-                info!(
-                    "NegativeBinomial::new failed: r={}, p={}, error={:?}",
-                    self.r, self.p, e
-                );
+                // info!(
+                //     "NegativeBinomial::new failed: r={}, p={}, error={:?}",
+                //     self.r, self.p, e
+                // );
                 LogProb::ln_zero()
             }
         }
@@ -120,15 +120,14 @@ impl Posterior for GenomicPosterior {
         // Calculate signal likelihood using current parameters
         let signal_likelihood = joint_prob(event, data);
 
-        // Calculate noise likelihood using more restrictive background parameters
-        let noise_likelihood = match NegativeBinomial::new(2.0, 0.9) {
-            // Higher p = lower variance, more restrictive
+        // output is very sensitive to the noise parameters
+        let noise_likelihood = match NegativeBinomial::new(0.7, 0.5) {
             Ok(nb_dist) => {
                 let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
-                info!(
-                    "Noise likelihood: count={}, ln_pmf={}",
-                    data.observed_count, log_likelihood
-                );
+                // info!(
+                //     "Noise likelihood: count={}, ln_pmf={}",
+                //     data.observed_count, log_likelihood
+                // );
                 LogProb::from(log_likelihood)
             }
             Err(_) => LogProb::ln_zero(),
@@ -183,12 +182,12 @@ impl BayesianModel {
         info!("Applying rust-bio Bayesian model to identify significant bins");
 
         let prior = GenomicPrior::from_bin_counts(bin_counts);
-        info!(
-            "Estimated negative binomial parameters: r={}, p={} (fallback used: {})",
-            prior.r,
-            prior.p,
-            prior.r == 3.0 && prior.p == 0.4
-        );
+        // info!(
+        //     "Estimated negative binomial parameters: r={}, p={} (fallback used: {})",
+        //     prior.r,
+        //     prior.p,
+        //     prior.r == 3.0 && prior.p == 0.4
+        // );
         *self.model.prior_mut() = prior.clone();
 
         self.model.likelihood_mut().r = prior.r;
@@ -222,10 +221,10 @@ impl BayesianModel {
                 .compute(&event, &data, &mut joint_prob_fn);
             let posterior_prob = (*Prob::from(posterior_log)).clamp(0.0, 1.0);
 
-            info!(
-                "Bin {}:{}-{} count={} posterior_log={:?} posterior_prob={}",
-                bin.chrom, bin.start, bin.end, count, posterior_log, posterior_prob
-            );
+            // info!(
+            //     "Bin {}:{}-{} count={} posterior_log={:?} posterior_prob={}",
+            //     bin.chrom, bin.start, bin.end, count, posterior_log, posterior_prob
+            // );
             posterior_probs.push((bin.clone(), posterior_prob));
         }
 
@@ -235,7 +234,7 @@ impl BayesianModel {
         let significant_bins: Vec<GenomicRange> =
             significant.into_iter().map(|(bin, _)| bin).collect();
 
-        info!("Found {} significant bins", significant_bins.len());
+        // info!("Found {} significant bins", significant_bins.len());
 
         Ok(significant_bins)
     }
