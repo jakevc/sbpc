@@ -36,35 +36,39 @@ impl Prior for GenomicPrior {
 
 impl GenomicPrior {
     pub fn from_bin_counts(bin_counts: &[(GenomicRange, usize)]) -> Self {
-        let non_zero_counts: Vec<f64> = bin_counts
-            .iter()
-            .filter_map(|(_, count)| {
-                if *count > 0 {
-                    Some(*count as f64)
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let counts: Vec<f64> = bin_counts.iter().map(|(_, count)| *count as f64).collect();
 
-        if non_zero_counts.is_empty() {
-            return Self { r: 1.0, p: 0.5 };
+        if counts.is_empty() || counts.len() < 2 {
+            return Self { r: 2.0, p: 0.3 };
         }
 
-        let mean = non_zero_counts.clone().mean();
-        let variance = non_zero_counts.variance();
+        let mean = counts.clone().mean();
+        let variance = counts.clone().variance();
 
-        if variance <= mean || variance == 0.0 || mean == 0.0 {
-            return Self { r: 1.0, p: 0.5 };
+        info!(
+            "Count statistics: mean={}, variance={}, n={}",
+            mean,
+            variance,
+            counts.len()
+        );
+
+        if variance > mean && variance.is_finite() && mean > 0.0 {
+            let r = (mean * mean) / (variance - mean);
+            let p = mean / variance;
+
+            if r.is_finite() && r > 0.0 && p.is_finite() && p > 0.0 && p < 1.0 {
+                let final_r = r.clamp(0.1, 100.0); // More reasonable bounds
+                let final_p = p.clamp(0.05, 0.95); // More reasonable bounds
+                info!("Using method of moments: r={}, p={}", final_r, final_p);
+                return Self {
+                    r: final_r,
+                    p: final_p,
+                };
+            }
         }
 
-        let r = (mean * mean) / (variance - mean);
-        let p = mean / variance;
-
-        Self {
-            r: r.max(0.01),         // Ensure r > 0
-            p: p.clamp(0.01, 0.99), // Ensure 0 < p < 1
-        }
+        info!("Using conservative fallback parameters");
+        Self { r: 2.0, p: 0.3 }
     }
 }
 
@@ -81,9 +85,19 @@ impl Likelihood for GenomicLikelihood {
         match NegativeBinomial::new(self.r, self.p) {
             Ok(nb_dist) => {
                 let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
+                info!(
+                    "NB likelihood: count={}, r={}, p={}, ln_pmf={}",
+                    data.observed_count, self.r, self.p, log_likelihood
+                );
                 LogProb::from(log_likelihood)
             }
-            Err(_) => LogProb::ln_zero(),
+            Err(e) => {
+                info!(
+                    "NegativeBinomial::new failed: r={}, p={}, error={:?}",
+                    self.r, self.p, e
+                );
+                LogProb::ln_zero()
+            }
         }
     }
 }
@@ -99,21 +113,32 @@ impl Posterior for GenomicPosterior {
     where
         F: FnMut(&Self::BaseEvent, &Self::Data) -> LogProb,
     {
-        // Calculate joint probability for signal hypothesis
-        let joint_prob_signal = joint_prob(event, data);
+        // Calculate signal likelihood using current parameters
+        let signal_likelihood = joint_prob(event, data);
 
-        let noise_event = GenomicEvent {
-            bin_count: (data.observed_count as f64 * 0.1) as usize,
-            total_reads: event.total_reads,
+        // Calculate noise likelihood using background parameters (conservative, high p)
+        let noise_likelihood = match NegativeBinomial::new(1.0, 0.8) {
+            Ok(nb_dist) => {
+                let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
+                LogProb::from(log_likelihood)
+            }
+            Err(_) => LogProb::ln_zero(),
         };
 
-        // Calculate joint probability for noise hypothesis
-        let joint_prob_noise = joint_prob(&noise_event, data);
+        let prior_signal = LogProb::from(Prob(0.5));
+        let prior_noise = LogProb::from(Prob(0.5));
+
+        let joint_prob_signal = signal_likelihood + prior_signal;
+        let joint_prob_noise = noise_likelihood + prior_noise;
 
         // Calculate evidence (marginal likelihood)
         let evidence = joint_prob_signal.ln_add_exp(joint_prob_noise);
 
-        joint_prob_signal - evidence
+        let posterior = joint_prob_signal - evidence;
+        info!("Posterior calculation: signal_lik={:?}, noise_lik={:?}, signal_joint={:?}, noise_joint={:?}, evidence={:?}, posterior={:?}", 
+              signal_likelihood, noise_likelihood, joint_prob_signal, joint_prob_noise, evidence, posterior);
+
+        posterior
     }
 }
 
@@ -153,6 +178,10 @@ impl BayesianModel {
         info!("Applying rust-bio Bayesian model to identify significant bins");
 
         let prior = GenomicPrior::from_bin_counts(bin_counts);
+        info!(
+            "Estimated negative binomial parameters: r={}, p={}",
+            prior.r, prior.p
+        );
         *self.model.prior_mut() = prior.clone();
 
         self.model.likelihood_mut().r = prior.r;
@@ -174,15 +203,22 @@ impl BayesianModel {
                 observed_count: *count,
             };
 
-            let universe = vec![event.clone()];
-            let model_instance = self.model.compute(universe, &data);
+            let mut joint_prob_fn = |event: &GenomicEvent, data: &ReadCountData| -> LogProb {
+                let likelihood = self.model.likelihood().compute(event, data, &mut ());
+                let prior = self.model.prior().compute(event);
+                likelihood + prior
+            };
 
-            let posterior_log = model_instance
-                .posterior(&event)
-                .unwrap_or(LogProb::ln_zero());
+            let posterior_log = self
+                .model
+                .posterior()
+                .compute(&event, &data, &mut joint_prob_fn);
             let posterior_prob = (*Prob::from(posterior_log)).clamp(0.0, 1.0);
 
-            info!("Bin {}:{}-{} calculated posterior_prob: {}", bin.chrom, bin.start, bin.end, posterior_prob);
+            info!(
+                "Bin {}:{}-{} count={} posterior_log={:?} posterior_prob={}",
+                bin.chrom, bin.start, bin.end, count, posterior_log, posterior_prob
+            );
             posterior_probs.push((bin.clone(), posterior_prob));
         }
 
@@ -208,7 +244,10 @@ impl BayesianModel {
             if posterior_prob >= threshold {
                 let mut bin_clone = bin.clone();
                 bin_clone.posterior_prob = posterior_prob;
-                info!("Setting bin {}:{}-{} posterior_prob to: {}", bin_clone.chrom, bin_clone.start, bin_clone.end, bin_clone.posterior_prob);
+                info!(
+                    "Setting bin {}:{}-{} posterior_prob to: {}",
+                    bin_clone.chrom, bin_clone.start, bin_clone.end, bin_clone.posterior_prob
+                );
                 significant.push((bin_clone, posterior_prob));
             }
         }
