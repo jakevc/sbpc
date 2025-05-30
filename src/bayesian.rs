@@ -182,6 +182,7 @@ impl BayesianModel {
                 .unwrap_or(LogProb::ln_zero());
             let posterior_prob = (*Prob::from(posterior_log)).clamp(0.0, 1.0);
 
+            info!("Bin {}:{}-{} calculated posterior_prob: {}", bin.chrom, bin.start, bin.end, posterior_prob);
             posterior_probs.push((bin.clone(), posterior_prob));
         }
 
@@ -207,6 +208,7 @@ impl BayesianModel {
             if posterior_prob >= threshold {
                 let mut bin_clone = bin.clone();
                 bin_clone.posterior_prob = posterior_prob;
+                info!("Setting bin {}:{}-{} posterior_prob to: {}", bin_clone.chrom, bin_clone.start, bin_clone.end, bin_clone.posterior_prob);
                 significant.push((bin_clone, posterior_prob));
             }
         }
