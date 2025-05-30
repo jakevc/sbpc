@@ -67,7 +67,6 @@ impl GenomicPrior {
             }
         }
 
-
         Self { r: 2.0, p: 0.3 }
     }
 }
@@ -135,7 +134,6 @@ impl Posterior for GenomicPosterior {
         let evidence = joint_prob_signal.ln_add_exp(joint_prob_noise);
 
         let posterior = joint_prob_signal - evidence;
-
 
         posterior
     }
