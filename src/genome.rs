@@ -115,7 +115,7 @@ impl Genome {
                             chrom: chromosome.to_string(),
                             start,
                             end,
-                            posterior_prob: 1.0, // Initialize posterior probability to 1.0
+                            posterior_prob: 0.0, // Will be set by Bayesian model
                         });
                         start += step;
                     }
@@ -144,7 +144,7 @@ impl Genome {
                             chrom: chrom.clone(),
                             start,
                             end,
-                            posterior_prob: 1.0, // Initialize posterior probability to 1.0
+                            posterior_prob: 0.0, // Will be set by Bayesian model
                         });
                         start += step;
                     }

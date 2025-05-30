@@ -4,7 +4,7 @@ use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::Result;
 use bio::io::bed::{Record, Writer};
-use bio::stats::{LogProb, Prob};
+
 use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -119,9 +119,7 @@ impl PeakCaller {
                     if bin.start <= current_peak.end + max_distance {
                         current_peak.end = bin.end.max(current_peak.end);
 
-                        let current_log = LogProb::from(Prob(current_peak.posterior_prob));
-                        let bin_log = LogProb::from(Prob(bin.posterior_prob));
-                        current_peak.posterior_prob = *Prob::from(current_log + bin_log);
+                        current_peak.posterior_prob = current_peak.posterior_prob.max(bin.posterior_prob);
                     } else {
                         result.push(current_peak.clone());
                         current_peak = bin.clone();
