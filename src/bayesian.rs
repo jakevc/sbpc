@@ -35,7 +35,7 @@ impl Prior for GenomicPrior {
 }
 
 impl GenomicPrior {
-    pub fn from_bin_counts(bin_counts: &[(GenomicRange, usize)], _total_reads: usize) -> Self {
+    pub fn from_bin_counts(bin_counts: &[(GenomicRange, usize)]) -> Self {
         let non_zero_counts: Vec<f64> = bin_counts
             .iter()
             .filter_map(|(_, count)| {
@@ -166,7 +166,7 @@ impl BayesianModel {
     ) -> Result<Vec<GenomicRange>> {
         info!("Applying rust-bio Bayesian model to identify significant bins");
 
-        let prior = GenomicPrior::from_bin_counts(bin_counts, total_reads);
+        let prior = GenomicPrior::from_bin_counts(bin_counts);
         *self.model.prior_mut() = prior.clone();
         
         self.model.likelihood_mut().r = prior.r;
