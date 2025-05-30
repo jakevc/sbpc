@@ -30,7 +30,7 @@ pub struct Cli {
     #[arg(short = 't', long, default_value_t = 200)]
     pub step: u32,
 
-    #[arg(short = 'w', long, default_value_t = 150)]
+    #[arg(short = 'w', long, default_value_t = 100)]
     pub minwidth: u32,
 
     #[arg(long)]
