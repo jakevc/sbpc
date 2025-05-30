@@ -57,8 +57,13 @@ impl GenomicPrior {
             let p = mean / variance;
 
             if r.is_finite() && r > 0.0 && p.is_finite() && p > 0.0 && p < 1.0 {
-                let final_r = r.clamp(0.1, 100.0); // More reasonable bounds
-                let final_p = p.clamp(0.05, 0.95); // More reasonable bounds
+                let final_r = r.clamp(1.0, 50.0); // Tighter bounds: min 1.0, max 50.0
+                let final_p = p.clamp(0.1, 0.8); // Tighter bounds: min 0.1, max 0.8
+
+                info!(
+                    "Method-of-moments estimation: raw r={}, p={}, clamped r={}, p={}",
+                    r, p, final_r, final_p
+                );
 
                 return Self {
                     r: final_r,
@@ -67,7 +72,7 @@ impl GenomicPrior {
             }
         }
 
-        Self { r: 2.0, p: 0.3 }
+        Self { r: 3.0, p: 0.4 }
     }
 }
 
@@ -115,25 +120,28 @@ impl Posterior for GenomicPosterior {
         // Calculate signal likelihood using current parameters
         let signal_likelihood = joint_prob(event, data);
 
-        // Calculate noise likelihood using background parameters (conservative, high p)
-        let noise_likelihood = match NegativeBinomial::new(1.0, 0.8) {
+        // Calculate noise likelihood using more restrictive background parameters
+        let noise_likelihood = match NegativeBinomial::new(2.0, 0.9) {
+            // Higher p = lower variance, more restrictive
             Ok(nb_dist) => {
                 let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
+                info!(
+                    "Noise likelihood: count={}, ln_pmf={}",
+                    data.observed_count, log_likelihood
+                );
                 LogProb::from(log_likelihood)
             }
             Err(_) => LogProb::ln_zero(),
         };
 
-        let prior_signal = LogProb::from(Prob(0.5));
-        let prior_noise = LogProb::from(Prob(0.5));
+        let prior_signal = LogProb::from(Prob(0.3)); // Reduced from 0.5 to be more conservative
+        let prior_noise = LogProb::from(Prob(0.7)); // Increased from 0.5 to be more conservative
 
         let joint_prob_signal = signal_likelihood + prior_signal;
         let joint_prob_noise = noise_likelihood + prior_noise;
 
         // Calculate evidence (marginal likelihood)
         let evidence = joint_prob_signal.ln_add_exp(joint_prob_noise);
-
-        
 
         joint_prob_signal - evidence
     }
@@ -176,8 +184,10 @@ impl BayesianModel {
 
         let prior = GenomicPrior::from_bin_counts(bin_counts);
         info!(
-            "Estimated negative binomial parameters: r={}, p={}",
-            prior.r, prior.p
+            "Estimated negative binomial parameters: r={}, p={} (fallback used: {})",
+            prior.r,
+            prior.p,
+            prior.r == 3.0 && prior.p == 0.4
         );
         *self.model.prior_mut() = prior.clone();
 
