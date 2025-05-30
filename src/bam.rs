@@ -136,10 +136,6 @@ impl BamProcessor {
             .iter()
             .cloned()
             .zip(bin_counts.iter().cloned())
-            .map(|(mut bin, count)| {
-                bin.posterior_prob = 1.0;
-                (bin, count)
-            })
             .collect();
 
         Ok(result)

@@ -4,7 +4,7 @@ use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::Result;
 use bio::io::bed::{Record, Writer};
-use bio::stats::{LogProb, Prob};
+
 use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -114,20 +114,21 @@ impl PeakCaller {
                 }
 
                 let mut current_peak = sorted_bins[0].clone();
+                let mut posterior_probs = vec![current_peak.posterior_prob];
 
                 for bin in sorted_bins.iter().skip(1) {
                     if bin.start <= current_peak.end + max_distance {
                         current_peak.end = bin.end.max(current_peak.end);
-
-                        let current_log = LogProb::from(Prob(current_peak.posterior_prob));
-                        let bin_log = LogProb::from(Prob(bin.posterior_prob));
-                        current_peak.posterior_prob = *Prob::from(current_log + bin_log);
+                        posterior_probs.push(bin.posterior_prob);
                     } else {
+                        current_peak.posterior_prob = median(&mut posterior_probs);
                         result.push(current_peak.clone());
                         current_peak = bin.clone();
+                        posterior_probs = vec![current_peak.posterior_prob];
                     }
                 }
 
+                current_peak.posterior_prob = median(&mut posterior_probs);
                 result.push(current_peak);
                 result
             })
@@ -172,5 +173,15 @@ impl Peaks {
             writer.write(&record).unwrap();
         }
         self.ranges.len()
+    }
+}
+
+fn median(values: &mut Vec<f64>) -> f64 {
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let len = values.len();
+    if len % 2 == 0 {
+        (values[len / 2 - 1] + values[len / 2]) / 2.0
+    } else {
+        values[len / 2]
     }
 }
