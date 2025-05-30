@@ -59,7 +59,7 @@ impl GenomicPrior {
             if r.is_finite() && r > 0.0 && p.is_finite() && p > 0.0 && p < 1.0 {
                 let final_r = r.clamp(0.1, 100.0); // More reasonable bounds
                 let final_p = p.clamp(0.05, 0.95); // More reasonable bounds
-                info!("Using method of moments: r={}, p={}", final_r, final_p);
+
                 return Self {
                     r: final_r,
                     p: final_p,
@@ -67,7 +67,7 @@ impl GenomicPrior {
             }
         }
 
-        info!("Using conservative fallback parameters");
+
         Self { r: 2.0, p: 0.3 }
     }
 }
@@ -135,8 +135,7 @@ impl Posterior for GenomicPosterior {
         let evidence = joint_prob_signal.ln_add_exp(joint_prob_noise);
 
         let posterior = joint_prob_signal - evidence;
-        info!("Posterior calculation: signal_lik={:?}, noise_lik={:?}, signal_joint={:?}, noise_joint={:?}, evidence={:?}, posterior={:?}", 
-              signal_likelihood, noise_likelihood, joint_prob_signal, joint_prob_noise, evidence, posterior);
+
 
         posterior
     }
