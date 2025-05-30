@@ -171,9 +171,9 @@ impl Peaks {
             record.set_chrom(&range.chrom);
             record.set_start(range.start as u64);
             record.set_end(range.end as u64);
-            record.set_name(&format!("peak{}", i+1));
+            record.set_name(&format!("peak{}", i + 1));
             record.set_score(&format!("{:.6}", range.posterior_prob));
-            record.push_aux(".");  // Add strand field as "." (unknown)
+            record.push_aux("."); // Add strand field as "." (unknown)
 
             writer.write(&record).unwrap();
         }
