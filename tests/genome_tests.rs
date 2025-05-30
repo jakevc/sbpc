@@ -11,7 +11,8 @@ fn test_create_bins() -> Result<()> {
     let genome = Genome { seqnames, lengths };
 
     let step = 100;
-    let bins = genome.create_bins(step)?;
+
+    let bins = genome.create_bins(step, None)?;
 
     // chr1: 1000/100 = 10 bins, chr2: 500/100 = 5 bins, total = 15
     assert_eq!(bins.len(), 15, "Expected 15 bins for non-overlapping bins");
@@ -27,6 +28,12 @@ fn test_create_bins() -> Result<()> {
     assert_eq!(bins[10].chrom, "chr2");
     assert_eq!(bins[10].start, 0);
     assert_eq!(bins[10].end, 100);
+
+    let chr1_bins = genome.create_bins(step, Some("chr1"))?;
+    assert_eq!(chr1_bins.len(), 10, "Expected 10 bins for chr1");
+
+    let chr2_bins = genome.create_bins(step, Some("chr2"))?;
+    assert_eq!(chr2_bins.len(), 5, "Expected 5 bins for chr2");
 
     Ok(())
 }
