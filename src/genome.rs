@@ -100,28 +100,64 @@ impl Genome {
         }
     }
 
-    pub fn create_bins(&self, step: u32) -> Result<Vec<GenomicRange>> {
-        info!("Creating non-overlapping genomic bins with step={}", step);
-
+    pub fn create_bins(&self, step: u32, chrom: Option<&str>) -> Result<Vec<GenomicRange>> {
         let mut bins = Vec::new();
 
-        for (i, chrom) in self.seqnames.iter().enumerate() {
-            let length = self.lengths[i];
-            let mut start = 0;
+        match chrom {
+            Some(chromosome) => {
+                if let Some(i) = self.seqnames.iter().position(|c| c == chromosome) {
+                    let length = self.lengths[i];
+                    let mut start = 0;
 
-            while start + step <= length {
-                let end = start + step;
-                bins.push(GenomicRange {
-                    chrom: chrom.clone(),
-                    start,
-                    end,
-                    posterior_prob: 1.0, // Initialize posterior probability to 1.0
-                });
-                start += step;
+                    while start + step <= length {
+                        let end = start + step;
+                        bins.push(GenomicRange {
+                            chrom: chromosome.to_string(),
+                            start,
+                            end,
+                            posterior_prob: 1.0, // Initialize posterior probability to 1.0
+                        });
+                        start += step;
+                    }
+
+                    info!(
+                        "Created {} non-overlapping genomic bins with step={} for chromosome {}",
+                        bins.len(),
+                        step,
+                        chromosome
+                    );
+                } else {
+                    info!("No bins created: chromosome {} not found", chromosome);
+                }
+            }
+            None => {
+                info!("Creating non-overlapping genomic bins with step={}", step);
+
+                for (i, chrom) in self.seqnames.iter().enumerate() {
+                    let length = self.lengths[i];
+                    let mut start = 0;
+                    let chrom_bins_start = bins.len();
+
+                    while start + step <= length {
+                        let end = start + step;
+                        bins.push(GenomicRange {
+                            chrom: chrom.clone(),
+                            start,
+                            end,
+                            posterior_prob: 1.0, // Initialize posterior probability to 1.0
+                        });
+                        start += step;
+                    }
+
+                    let chrom_bins_count = bins.len() - chrom_bins_start;
+                    if chrom_bins_count > 0 {
+                        info!("Created {} non-overlapping genomic bins with step={} for chromosome {}", 
+                              chrom_bins_count, step, chrom);
+                    }
+                }
             }
         }
 
-        info!("Created {} non-overlapping genomic bins", bins.len());
         Ok(bins)
     }
 }

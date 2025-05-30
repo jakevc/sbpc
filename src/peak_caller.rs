@@ -61,13 +61,7 @@ impl PeakCaller {
             .par_iter()
             .flat_map(|chrom| {
                 // Create bins for this chromosome only
-                let bins: Vec<GenomicRange> = self
-                    .genome
-                    .create_bins(step)
-                    .unwrap()
-                    .into_iter()
-                    .filter(|b| &b.chrom == chrom)
-                    .collect();
+                let bins: Vec<GenomicRange> = self.genome.create_bins(step, Some(chrom)).unwrap();
 
                 if bins.is_empty() {
                     return Vec::new();
