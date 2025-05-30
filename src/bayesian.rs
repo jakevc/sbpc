@@ -2,6 +2,7 @@ use anyhow::Result;
 use bio::stats::bayesian::model::{Likelihood, Model, Posterior, Prior};
 use bio::stats::{LogProb, Prob};
 use log::info;
+use statrs::distribution::{Discrete, NegativeBinomial};
 use statrs::statistics::Statistics;
 
 use crate::bam::GenomicRange;
@@ -18,9 +19,10 @@ pub struct ReadCountData {
 }
 
 #[allow(dead_code)]
+#[derive(Clone)]
 pub struct GenomicPrior {
-    pub alpha: f64,
-    pub beta: f64,
+    pub r: f64,      // number of successes parameter
+    pub p: f64,      // success probability parameter
 }
 
 impl Prior for GenomicPrior {
@@ -45,42 +47,52 @@ impl GenomicPrior {
             })
             .collect();
 
-        let mean = non_zero_counts.clone().mean();
-        let variance = non_zero_counts.variance();
-
-        let total_mean = mean / total_reads as f64;
-        let total_variance = variance / (total_reads * total_reads) as f64;
-
-        if total_variance >= total_mean * (1.0 - total_mean) {
+        if non_zero_counts.is_empty() {
             return Self {
-                alpha: 1.0,
-                beta: 99.0,
+                r: 1.0,
+                p: 0.5,
             };
         }
 
-        let alpha_beta_sum = total_mean * (1.0 - total_mean) / total_variance - 1.0;
-        let alpha = total_mean * alpha_beta_sum;
-        let beta = (1.0 - total_mean) * alpha_beta_sum;
+        let mean = non_zero_counts.clone().mean();
+        let variance = non_zero_counts.variance();
+
+        if variance <= mean || variance == 0.0 || mean == 0.0 {
+            return Self {
+                r: 1.0,
+                p: 0.5,
+            };
+        }
+
+        let r = (mean * mean) / (variance - mean);
+        let p = mean / variance;
 
         Self {
-            alpha: alpha.max(0.01),
-            beta: beta.max(0.01),
+            r: r.max(0.01),  // Ensure r > 0
+            p: p.clamp(0.01, 0.99),  // Ensure 0 < p < 1
         }
     }
 }
 
-pub struct GenomicLikelihood;
+pub struct GenomicLikelihood {
+    pub r: f64,
+    pub p: f64,
+}
 
 impl Likelihood for GenomicLikelihood {
     type Event = GenomicEvent;
     type Data = ReadCountData;
 
-    fn compute(&self, event: &Self::Event, data: &Self::Data, _payload: &mut ()) -> LogProb {
-        let observed_proportion = data.observed_count as f64 / event.total_reads as f64;
-
-        let likelihood_given_signal = observed_proportion.max(0.5);
-
-        LogProb::from(Prob(likelihood_given_signal))
+    fn compute(&self, _event: &Self::Event, data: &Self::Data, _payload: &mut ()) -> LogProb {
+        match NegativeBinomial::new(self.r, self.p) {
+            Ok(nb_dist) => {
+                let log_likelihood = nb_dist.ln_pmf(data.observed_count as u64);
+                LogProb::from(log_likelihood)
+            }
+            Err(_) => {
+                LogProb::ln_zero()
+            }
+        }
     }
 }
 
@@ -121,10 +133,13 @@ pub struct BayesianModel {
 
 impl BayesianModel {
     pub fn new(significance_threshold: f64, min_reads: u32) -> Self {
-        let likelihood = GenomicLikelihood;
+        let likelihood = GenomicLikelihood {
+            r: 1.0,
+            p: 0.5,
+        };
         let prior = GenomicPrior {
-            alpha: 1.0,
-            beta: 99.0,
+            r: 1.0,
+            p: 0.5,
         };
         let posterior = GenomicPosterior;
         let model = Model::new(likelihood, prior, posterior);
@@ -152,7 +167,10 @@ impl BayesianModel {
         info!("Applying rust-bio Bayesian model to identify significant bins");
 
         let prior = GenomicPrior::from_bin_counts(bin_counts, total_reads);
-        *self.model.prior_mut() = prior;
+        *self.model.prior_mut() = prior.clone();
+        
+        self.model.likelihood_mut().r = prior.r;
+        self.model.likelihood_mut().p = prior.p;
 
         let mut significant_bins = Vec::new();
         let mut posterior_probs = Vec::new();
