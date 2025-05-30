@@ -158,7 +158,6 @@ impl BayesianModel {
         self.model.likelihood_mut().r = prior.r;
         self.model.likelihood_mut().p = prior.p;
 
-        let mut significant_bins = Vec::new();
         let mut posterior_probs = Vec::new();
 
         for (bin, count) in bin_counts {
@@ -189,9 +188,7 @@ impl BayesianModel {
         let significant =
             self.apply_posterior_threshold(posterior_probs, self.significance_threshold)?;
 
-        for (bin, _) in significant {
-            significant_bins.push(bin);
-        }
+        let significant_bins: Vec<GenomicRange> = significant.into_iter().map(|(bin, _)| bin).collect();
 
         info!("Found {} significant bins", significant_bins.len());
 
