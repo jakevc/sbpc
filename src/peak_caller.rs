@@ -3,7 +3,7 @@ use crate::bayesian::BayesianModel;
 use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::Result;
-use bio::io::bed::{Writer, Record};
+use bio::io::bed::{Record, Writer};
 use bio::stats::{LogProb, Prob};
 use log::info;
 use rayon::prelude::*;
@@ -165,7 +165,7 @@ impl Peaks {
         let stdout = io::stdout();
         let handle = stdout.lock();
         let mut writer = Writer::new(handle);
-        
+
         for range in &self.ranges {
             let mut record = Record::new();
             record.set_chrom(&range.chrom);
@@ -173,7 +173,7 @@ impl Peaks {
             record.set_end(range.end as u64);
             record.set_name("peak");
             record.set_score(&format!("{:.6}", range.posterior_prob));
-            
+
             writer.write(&record).unwrap();
         }
         self.ranges.len()
