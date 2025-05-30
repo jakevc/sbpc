@@ -119,7 +119,7 @@ impl PeakCaller {
                     if bin.start <= current_peak.end + max_distance {
                         current_peak.end = bin.end.max(current_peak.end);
 
-                        current_peak.posterior_prob = current_peak.posterior_prob.max(bin.posterior_prob);
+                        current_peak.posterior_prob *= bin.posterior_prob;
                     } else {
                         result.push(current_peak.clone());
                         current_peak = bin.clone();
