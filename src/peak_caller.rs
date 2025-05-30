@@ -3,10 +3,12 @@ use crate::bayesian::BayesianModel;
 use crate::cli::Cli;
 use crate::genome::Genome;
 use anyhow::Result;
+use bio::io::bed::{Writer, Record};
 use bio::stats::{LogProb, Prob};
 use log::info;
 use rayon::prelude::*;
 use std::collections::HashMap;
+use std::io;
 
 pub struct PeakCaller {
     cli: Cli,
@@ -160,16 +162,19 @@ pub struct Peaks {
 
 impl Peaks {
     pub fn write_to_stdout_bed(&self) -> usize {
-        use std::io::{self, Write};
         let stdout = io::stdout();
-        let mut handle = stdout.lock();
+        let handle = stdout.lock();
+        let mut writer = Writer::new(handle);
+        
         for range in &self.ranges {
-            writeln!(
-                handle,
-                "{}\t{}\t{}\tpeak\t{:.6}\t.",
-                range.chrom, range.start, range.end, range.posterior_prob
-            )
-            .unwrap();
+            let mut record = Record::new();
+            record.set_chrom(&range.chrom);
+            record.set_start(range.start as u64);
+            record.set_end(range.end as u64);
+            record.set_name("peak");
+            record.set_score(&format!("{:.6}", range.posterior_prob));
+            
+            writer.write(&record).unwrap();
         }
         self.ranges.len()
     }
