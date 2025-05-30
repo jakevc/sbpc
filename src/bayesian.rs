@@ -188,7 +188,8 @@ impl BayesianModel {
         let significant =
             self.apply_posterior_threshold(posterior_probs, self.significance_threshold)?;
 
-        let significant_bins: Vec<GenomicRange> = significant.into_iter().map(|(bin, _)| bin).collect();
+        let significant_bins: Vec<GenomicRange> =
+            significant.into_iter().map(|(bin, _)| bin).collect();
 
         info!("Found {} significant bins", significant_bins.len());
 
