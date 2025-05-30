@@ -133,9 +133,9 @@ impl Posterior for GenomicPosterior {
         // Calculate evidence (marginal likelihood)
         let evidence = joint_prob_signal.ln_add_exp(joint_prob_noise);
 
-        let posterior = joint_prob_signal - evidence;
+        
 
-        posterior
+        joint_prob_signal - evidence
     }
 }
 
