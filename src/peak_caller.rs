@@ -176,7 +176,7 @@ impl Peaks {
     }
 }
 
-fn median(values: &mut Vec<f64>) -> f64 {
+fn median(values: &mut [f64]) -> f64 {
     values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let len = values.len();
     if len % 2 == 0 {

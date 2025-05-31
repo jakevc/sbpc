@@ -95,7 +95,7 @@ impl Likelihood for GenomicLikelihood {
                 // );
                 LogProb::from(log_likelihood)
             }
-            Err(e) => {
+            Err(_e) => {
                 // info!(
                 //     "NegativeBinomial::new failed: r={}, p={}, error={:?}",
                 //     self.r, self.p, e
