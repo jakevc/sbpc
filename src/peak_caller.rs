@@ -128,7 +128,7 @@ impl PeakCaller {
                     }
                 }
 
-                // the posterior probability for the peak is the median posterior 
+                // the posterior probability for the peak is the median posterior
                 // probability for all bins in that peak
                 current_peak.posterior_prob = median(&mut posterior_probs);
                 result.push(current_peak);
